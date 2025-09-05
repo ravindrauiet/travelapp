@@ -1,0 +1,39 @@
+{
+    "dart.flutterSdkPath": null,
+    "dart.sdkPath": null,
+    "dart.flutterSdkPath": null,
+    "dart.lineLength": 80,
+    "editor.rulers": [80],
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off",
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true,
+    "dart.closingLabels": true,
+    "dart.enableSdkFormatter": true,
+    "dart.insertArgumentPlaceholders": false,
+    "dart.promptToGetPackages": false,
+    "dart.runPubGetOnPubspecChanges": true,
+    "dart.warnWhenEditingFilesOutsideWorkspace": true,
+    "dart.allowAnalytics": false,
+    "dart.checkForSdkUpdates": false,
+    "files.associations": {
+        "*.dart": "dart"
+    },
+    "emmet.includeLanguages": {
+        "dart": "html"
+    },
+    "[dart]": {
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "editor.rulers": [80],
+        "editor.selectionHighlight": false,
+        "editor.suggest.snippetsPreventQuickSuggestions": false,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off"
+    }
+}
+

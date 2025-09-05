@@ -1,0 +1,49 @@
+{
+  "stations": [
+    {
+      "id": "1",
+      "name": "Dwarka Sector 21",
+      "line": "Blue Line",
+      "lineColor": "#1976D2",
+      "latitude": 28.5921,
+      "longitude": 77.0465,
+      "facilities": ["Parking", "ATM", "Food Court"],
+      "isInterchange": false,
+      "interchangeLines": []
+    },
+    {
+      "id": "2",
+      "name": "Dwarka Sector 8",
+      "line": "Blue Line",
+      "lineColor": "#1976D2",
+      "latitude": 28.5845,
+      "longitude": 77.0523,
+      "facilities": ["Parking", "ATM"],
+      "isInterchange": false,
+      "interchangeLines": []
+    },
+    {
+      "id": "31",
+      "name": "Kashmere Gate",
+      "line": "Red Line",
+      "lineColor": "#D32F2F",
+      "latitude": 28.6474,
+      "longitude": 77.1608,
+      "facilities": ["Parking", "ATM", "Food Court"],
+      "isInterchange": true,
+      "interchangeLines": ["Yellow Line", "Violet Line"]
+    },
+    {
+      "id": "55",
+      "name": "Rajiv Chowk",
+      "line": "Yellow Line",
+      "lineColor": "#FFC107",
+      "latitude": 28.6170,
+      "longitude": 77.1840,
+      "facilities": ["Parking", "ATM", "Food Court"],
+      "isInterchange": true,
+      "interchangeLines": ["Blue Line"]
+    }
+  ]
+}
+
