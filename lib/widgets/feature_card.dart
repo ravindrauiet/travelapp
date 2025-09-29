@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import '../utils/responsive_helper.dart';
 
 class FeatureCard extends StatefulWidget {
   final String title;
@@ -73,7 +74,7 @@ class _FeatureCardState extends State<FeatureCard>
               onTapCancel: () => _animationController.reverse(),
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(ResponsiveHelper.isMobile(context) ? 12 : 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
@@ -87,42 +88,55 @@ class _FeatureCardState extends State<FeatureCard>
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: widget.color.withOpacity(0.2),
-                          width: 1,
+                    Flexible(
+                      flex: 2,
+                      child: Container(
+                        padding: EdgeInsets.all(ResponsiveHelper.isMobile(context) ? 8 : 12),
+                        decoration: BoxDecoration(
+                          color: widget.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: widget.color.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          widget.icon,
+                          size: ResponsiveHelper.isMobile(context) ? 24 : 28,
+                          color: widget.color,
                         ),
                       ),
-                      child: Icon(
-                        widget.icon,
-                        size: 28,
-                        color: widget.color,
-                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.title,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: widget.color,
-                        fontWeight: FontWeight.w600,
+                    SizedBox(height: ResponsiveHelper.isMobile(context) ? 8 : 12),
+                    Flexible(
+                      flex: 1,
+                      child: Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: widget.color,
+                          fontWeight: FontWeight.w600,
+                          fontSize: ResponsiveHelper.isMobile(context) ? 12 : 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     if (widget.subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle!,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Flexible(
+                        flex: 1,
+                        child: Text(
+                          widget.subtitle!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: ResponsiveHelper.isMobile(context) ? 10 : 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ],

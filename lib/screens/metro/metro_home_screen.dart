@@ -5,6 +5,7 @@ import '../../providers/location_provider.dart';
 import '../../providers/metro_provider.dart';
 import '../../widgets/feature_card.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 
 class MetroHomeScreen extends StatefulWidget {
   const MetroHomeScreen({super.key});
@@ -158,10 +159,10 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
                   children: [
                     FeatureCard(
                       title: 'Fare Calculator',

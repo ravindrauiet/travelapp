@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/feature_card.dart';
+import '../widgets/compact_feature_card.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/tablet_navigation.dart';
 import '../utils/app_theme.dart';
+import '../utils/responsive_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,6 +63,43 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = ResponsiveHelper.isTablet(context);
+    final isDesktop = ResponsiveHelper.isDesktop(context);
+    
+    if (isTablet || isDesktop) {
+      return Scaffold(
+        body: Row(
+          children: [
+            TabletNavigation(currentIndex: 0),
+            Expanded(
+              child: Column(
+                children: [
+                  AppBar(
+                    title: const Text('Delhi Travel Guide'),
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {
+                          // Handle notifications
+                        },
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: _buildBody(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delhi Travel Guide'),
@@ -85,19 +125,30 @@ class _HomeScreenState extends State<HomeScreen>
         title: 'Delhi Travel Guide',
         subtitle: 'Your travel companion',
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      body: _buildBody(context),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: SingleChildScrollView(
+            padding: ResponsiveHelper.getScreenPadding(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Welcome Section
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(ResponsiveHelper.getCardPadding(context)),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
@@ -157,42 +208,13 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickStat(
-                              'Metro Lines',
-                              '8',
-                              Icons.train,
-                              Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickStat(
-                              'Bus Routes',
-                              '150+',
-                              Icons.directions_bus,
-                              Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickStat(
-                              'Stations',
-                              '300+',
-                              Icons.location_on,
-                              Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                      SizedBox(height: ResponsiveHelper.isMobile(context) ? 20 : 24),
+                      _buildResponsiveStats(context),
                     ],
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
                 
                 // Metro Features
                 _buildSectionHeader(
@@ -200,37 +222,37 @@ class _HomeScreenState extends State<HomeScreen>
                   'Plan your metro journey',
                   () => context.go('/metro'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
                   children: [
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Fare Calculator',
                       subtitle: 'Calculate fare',
                       icon: Icons.calculate,
                       color: AppTheme.metroBlue,
                       onTap: () => context.go('/metro/fare-calculator'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Route Finder',
                       subtitle: 'Find best route',
                       icon: Icons.route,
                       color: AppTheme.metroRed,
                       onTap: () => context.go('/metro/route-finder'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Live Updates',
                       subtitle: 'Real-time info',
                       icon: Icons.update,
                       color: AppTheme.metroGreen,
                       onTap: () => context.go('/metro/live-updates'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Nearest Station',
                       subtitle: 'Find nearby',
                       icon: Icons.location_on,
@@ -240,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
                 
                 // Bus Features
                 _buildSectionHeader(
@@ -248,37 +270,37 @@ class _HomeScreenState extends State<HomeScreen>
                   'Explore bus routes',
                   () => context.go('/bus'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
                   children: [
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Route Finder',
                       subtitle: 'Find bus routes',
                       icon: Icons.directions_bus,
                       color: AppTheme.infoColor,
                       onTap: () => context.go('/bus/route-finder'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Stop Locator',
                       subtitle: 'Find bus stops',
                       icon: Icons.bus_alert,
                       color: AppTheme.warningColor,
                       onTap: () => context.go('/bus/stop-locator'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Live Timing',
                       subtitle: 'Real-time schedule',
                       icon: Icons.schedule,
                       color: AppTheme.metroOrange,
                       onTap: () => context.go('/bus'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Bus Services',
                       subtitle: 'All bus info',
                       icon: Icons.directions_transit,
@@ -288,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
                 
                 // Other Transport
                 _buildSectionHeader(
@@ -296,23 +318,23 @@ class _HomeScreenState extends State<HomeScreen>
                   'Alternative transport options',
                   () => context.go('/transport'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
                   children: [
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Auto & Cab',
                       subtitle: 'Book rides',
                       icon: Icons.local_taxi,
                       color: AppTheme.accentColor,
                       onTap: () => context.go('/transport'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Cycle Rentals',
                       subtitle: 'Eco-friendly',
                       icon: Icons.pedal_bike,
@@ -322,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
                 
                 // City Assistance
                 _buildSectionHeader(
@@ -330,37 +352,37 @@ class _HomeScreenState extends State<HomeScreen>
                   'Explore Delhi',
                   () => context.go('/tourist-spots'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
                   children: [
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Tourist Spots',
                       subtitle: 'Discover places',
                       icon: Icons.place,
                       color: AppTheme.metroMagenta,
                       onTap: () => context.go('/tourist-spots'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Emergency',
                       subtitle: 'Emergency help',
                       icon: Icons.emergency,
                       color: AppTheme.errorColor,
                       onTap: () => context.go('/emergency'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'Weather',
                       subtitle: 'Weather info',
                       icon: Icons.wb_sunny,
                       color: AppTheme.warningColor,
                       onTap: () => context.go('/weather'),
                     ),
-                    FeatureCard(
+                    CompactFeatureCard(
                       title: 'More Services',
                       subtitle: 'Additional help',
                       icon: Icons.more_horiz,
@@ -370,14 +392,57 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 
-                const SizedBox(height: 32),
-              ],
+                SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
-    );
+      );
+  }
+
+  Widget _buildResponsiveStats(BuildContext context) {
+    final stats = [
+      {'label': 'Metro Lines', 'value': '8', 'icon': Icons.train},
+      {'label': 'Bus Routes', 'value': '150+', 'icon': Icons.directions_bus},
+      {'label': 'Stations', 'value': '300+', 'icon': Icons.location_on},
+      {'label': 'Daily Users', 'value': '2.8M', 'icon': Icons.people},
+      {'label': 'Coverage', 'value': '95%', 'icon': Icons.map},
+    ];
+
+    final visibleStats = stats.take(ResponsiveHelper.getWelcomeStatsCount(context)).toList();
+    
+    if (ResponsiveHelper.isMobile(context)) {
+      return Row(
+        children: visibleStats.map((stat) => 
+          Expanded(
+            child: _buildQuickStat(
+              stat['label'] as String,
+              stat['value'] as String,
+              stat['icon'] as IconData,
+              Colors.white,
+            ),
+          ),
+        ).toList(),
+      );
+    } else {
+      return Wrap(
+        spacing: ResponsiveHelper.getGridSpacing(context),
+        runSpacing: ResponsiveHelper.getGridSpacing(context),
+        children: visibleStats.map((stat) => 
+          SizedBox(
+            width: (MediaQuery.of(context).size.width - ResponsiveHelper.getScreenPadding(context).horizontal - ResponsiveHelper.getGridSpacing(context) * (visibleStats.length - 1)) / visibleStats.length,
+            child: _buildQuickStat(
+              stat['label'] as String,
+              stat['value'] as String,
+              stat['icon'] as IconData,
+              Colors.white,
+            ),
+          ),
+        ).toList(),
+      );
+    }
   }
 
   Widget _buildQuickStat(String label, String value, IconData icon, Color color) {
