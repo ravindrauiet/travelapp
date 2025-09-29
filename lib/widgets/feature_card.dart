@@ -120,9 +120,7 @@ class _FeatureCardState extends State<FeatureCard>
                       Text(
                         widget.subtitle!,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textTertiary,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

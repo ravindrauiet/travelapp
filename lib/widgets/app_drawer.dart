@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../utils/app_theme.dart';
+import '../providers/theme_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   final String title;
@@ -139,6 +141,27 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           const Divider(),
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return ListTile(
+                leading: Icon(
+                  themeProvider.themeIcon,
+                  color: AppTheme.primaryColor,
+                ),
+                title: Text('Theme: ${themeProvider.themeModeName}'),
+                trailing: Switch(
+                  value: themeProvider.isDarkMode,
+                  onChanged: (value) {
+                    themeProvider.toggleTheme();
+                  },
+                  activeColor: AppTheme.primaryColor,
+                ),
+                onTap: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.info, color: Colors.grey),
             title: const Text('About'),
@@ -170,4 +193,7 @@ class AppDrawer extends StatelessWidget {
     );
   }
 }
+
+
+
 

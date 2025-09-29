@@ -7,6 +7,7 @@ import 'providers/location_provider.dart';
 import 'providers/metro_provider.dart';
 import 'providers/bus_provider.dart';
 import 'providers/weather_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/metro/metro_home_screen.dart';
 import 'screens/metro/fare_calculator_screen.dart';
@@ -32,18 +33,23 @@ class DelhiTravelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => MetroProvider()),
         ChangeNotifierProvider(create: (_) => BusProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
       ],
-      child: MaterialApp.router(
-        title: 'Delhi Travel Guide',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        routerConfig: _router,
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            title: 'DelhiGo',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            routerConfig: _router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

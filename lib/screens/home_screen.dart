@@ -422,16 +422,13 @@ class _HomeScreenState extends State<HomeScreen>
               Text(
                 title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
           ),

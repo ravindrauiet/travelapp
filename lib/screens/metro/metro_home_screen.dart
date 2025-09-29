@@ -97,7 +97,6 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                               Text(
                                 'Current Location',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.textTertiary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -105,7 +104,6 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                               Text(
                                 locationProvider.currentAddress!,
                                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: AppTheme.textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 2,
@@ -130,16 +128,13 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                           Text(
                             'Metro Services',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppTheme.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Plan your metro journey',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
                       ),
@@ -211,16 +206,13 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                           Text(
                             'Quick Stats',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppTheme.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Metro system overview',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
                       ),
@@ -489,7 +481,6 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
