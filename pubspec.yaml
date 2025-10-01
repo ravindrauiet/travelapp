@@ -28,6 +28,7 @@ dependencies:
   # HTTP & API
   http: ^1.1.0
   dio: ^5.3.2
+  csv: ^5.0.2
   
   # Local Storage
   shared_preferences: ^2.2.2

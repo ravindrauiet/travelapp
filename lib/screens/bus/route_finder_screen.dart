@@ -412,7 +412,7 @@ class _BusRouteFinderScreenState extends State<BusRouteFinderScreen> {
                         ),
                       ),
                       title: Text(
-                        stop,
+                        stop.name,
                         style: TextStyle(
                           fontWeight: isFirst || isLast ? FontWeight.bold : FontWeight.normal,
                         ),

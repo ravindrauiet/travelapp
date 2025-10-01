@@ -1,0 +1,114 @@
+{
+  "routes": [
+    {
+      "id": "route_1",
+      "number": "1",
+      "name": "Red Fort - Connaught Place",
+      "stops": [
+        {"id": "red_fort", "name": "Red Fort", "lat": 28.6562, "lng": 77.2410},
+        {"id": "chandni_chowk", "name": "Chandni Chowk", "lat": 28.6508, "lng": 77.2304},
+        {"id": "fatehpuri", "name": "Fatehpuri", "lat": 28.6454, "lng": 77.2198},
+        {"id": "karol_bagh", "name": "Karol Bagh", "lat": 28.6399, "lng": 77.2092},
+        {"id": "rajiv_chowk", "name": "Rajiv Chowk", "lat": 28.6344, "lng": 77.1986}
+      ],
+      "frequency": "5-8 minutes",
+      "operating_hours": "05:00-23:00",
+      "from_location": "Red Fort",
+      "to_location": "Connaught Place",
+      "total_distance": 8.5,
+      "total_time": 25,
+      "fare": 15.0,
+      "first_bus": "05:00",
+      "last_bus": "23:00"
+    },
+    {
+      "id": "route_2",
+      "number": "2",
+      "name": "India Gate - CP",
+      "stops": [
+        {"id": "india_gate", "name": "India Gate", "lat": 28.6129, "lng": 77.2295},
+        {"id": "rajpath", "name": "Rajpath", "lat": 28.6174, "lng": 77.2140},
+        {"id": "central_secretariat", "name": "Central Secretariat", "lat": 28.6219, "lng": 77.1985},
+        {"id": "rajiv_chowk", "name": "Rajiv Chowk", "lat": 28.6264, "lng": 77.1830}
+      ],
+      "frequency": "3-5 minutes",
+      "operating_hours": "05:30-22:30",
+      "from_location": "India Gate",
+      "to_location": "Connaught Place",
+      "total_distance": 4.2,
+      "total_time": 15,
+      "fare": 10.0,
+      "first_bus": "05:30",
+      "last_bus": "22:30"
+    },
+    {
+      "id": "route_3",
+      "number": "3",
+      "name": "Dwarka - CP",
+      "stops": [
+        {"id": "dwarka_sector_21", "name": "Dwarka Sector 21", "lat": 28.5921, "lng": 77.0465},
+        {"id": "dwarka_sector_10", "name": "Dwarka Sector 10", "lat": 28.5834, "lng": 77.0564},
+        {"id": "dwarka", "name": "Dwarka", "lat": 28.5689, "lng": 77.0729},
+        {"id": "janakpuri", "name": "Janakpuri", "lat": 28.5544, "lng": 77.0894},
+        {"id": "rajouri_garden", "name": "Rajouri Garden", "lat": 28.5399, "lng": 77.1059},
+        {"id": "karol_bagh", "name": "Karol Bagh", "lat": 28.5254, "lng": 77.1224},
+        {"id": "rajiv_chowk", "name": "Rajiv Chowk", "lat": 28.5109, "lng": 77.1389}
+      ],
+      "frequency": "8-12 minutes",
+      "operating_hours": "05:00-23:30",
+      "from_location": "Dwarka",
+      "to_location": "Connaught Place",
+      "total_distance": 18.5,
+      "total_time": 45,
+      "fare": 25.0,
+      "first_bus": "05:00",
+      "last_bus": "23:30"
+    },
+    {
+      "id": "route_4",
+      "number": "4",
+      "name": "Rohini - CP",
+      "stops": [
+        {"id": "rohini_sector_18", "name": "Rohini Sector 18", "lat": 28.5550, "lng": 77.4450},
+        {"id": "rohini_sector_9", "name": "Rohini Sector 9", "lat": 28.5500, "lng": 77.4500},
+        {"id": "pitampura", "name": "Pitampura", "lat": 28.5450, "lng": 77.4550},
+        {"id": "netaji_subhash_place", "name": "Netaji Subhash Place", "lat": 28.5400, "lng": 77.4600},
+        {"id": "azadpur", "name": "Azadpur", "lat": 28.5350, "lng": 77.4650},
+        {"id": "kashmere_gate", "name": "Kashmere Gate", "lat": 28.5300, "lng": 77.4700},
+        {"id": "rajiv_chowk", "name": "Rajiv Chowk", "lat": 28.5250, "lng": 77.4750}
+      ],
+      "frequency": "6-10 minutes",
+      "operating_hours": "05:15-23:15",
+      "from_location": "Rohini",
+      "to_location": "Connaught Place",
+      "total_distance": 12.8,
+      "total_time": 35,
+      "fare": 20.0,
+      "first_bus": "05:15",
+      "last_bus": "23:15"
+    },
+    {
+      "id": "route_5",
+      "number": "5",
+      "name": "Noida - CP",
+      "stops": [
+        {"id": "noida_sector_18", "name": "Noida Sector 18", "lat": 28.4761, "lng": 77.1785},
+        {"id": "noida_sector_16", "name": "Noida Sector 16", "lat": 28.4790, "lng": 77.1752},
+        {"id": "noida_sector_15", "name": "Noida Sector 15", "lat": 28.4819, "lng": 77.1719},
+        {"id": "mayur_vihar", "name": "Mayur Vihar", "lat": 28.4848, "lng": 77.1686},
+        {"id": "yamuna_bank", "name": "Yamuna Bank", "lat": 28.4877, "lng": 77.1653},
+        {"id": "indraprastha", "name": "Indraprastha", "lat": 28.4906, "lng": 77.1620},
+        {"id": "rajiv_chowk", "name": "Rajiv Chowk", "lat": 28.4935, "lng": 77.1587}
+      ],
+      "frequency": "7-12 minutes",
+      "operating_hours": "05:30-23:00",
+      "from_location": "Noida",
+      "to_location": "Connaught Place",
+      "total_distance": 15.2,
+      "total_time": 40,
+      "fare": 22.0,
+      "first_bus": "05:30",
+      "last_bus": "23:00"
+    }
+  ]
+}

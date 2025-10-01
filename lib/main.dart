@@ -13,9 +13,13 @@ import 'screens/metro/metro_home_screen.dart';
 import 'screens/metro/fare_calculator_screen.dart';
 import 'screens/metro/route_finder_screen.dart';
 import 'screens/metro/live_updates_screen.dart';
+import 'screens/metro/metro_map_screen.dart';
 import 'screens/bus/bus_home_screen.dart';
 import 'screens/bus/route_finder_screen.dart';
 import 'screens/bus/stop_locator_screen.dart';
+import 'screens/bus/bus_map_screen.dart';
+import 'screens/bus/realtime_bus_tracker.dart';
+import 'screens/bus/api_test_screen.dart';
 import 'screens/transport/transport_home_screen.dart';
 import 'screens/city/tourist_spots_screen.dart';
 import 'screens/city/emergency_screen.dart';
@@ -79,6 +83,10 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const MetroLiveUpdatesScreen(),
     ),
     GoRoute(
+      path: '/metro/map',
+      builder: (context, state) => const MetroMapScreen(),
+    ),
+    GoRoute(
       path: '/bus',
       builder: (context, state) => const BusHomeScreen(),
     ),
@@ -89,6 +97,18 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/bus/stop-locator',
       builder: (context, state) => const BusStopLocatorScreen(),
+    ),
+    GoRoute(
+      path: '/bus/map',
+      builder: (context, state) => const BusMapScreen(),
+    ),
+    GoRoute(
+      path: '/bus/realtime',
+      builder: (context, state) => const RealtimeBusTracker(),
+    ),
+    GoRoute(
+      path: '/bus/api-test',
+      builder: (context, state) => const ApiTestScreen(),
     ),
     GoRoute(
       path: '/transport',

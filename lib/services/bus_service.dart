@@ -213,26 +213,30 @@ class BusService {
     return [
       BusRoute(
         id: '1',
-        busNumber: '101',
+        number: '101',
+        name: 'Route 101',
         fromLocation: from.name,
         toLocation: to.name,
         stops: _generateStops(from.name, to.name),
         totalTime: 25,
         totalDistance: 8.5,
         frequency: 'Every 10 minutes',
+        operatingHours: '05:00-23:00',
         firstBus: '05:00',
         lastBus: '23:00',
         fare: 15.0,
       ),
       BusRoute(
         id: '2',
-        busNumber: '102',
+        number: '102',
+        name: 'Route 102',
         fromLocation: from.name,
         toLocation: to.name,
         stops: _generateStops(from.name, to.name),
         totalTime: 30,
         totalDistance: 9.2,
         frequency: 'Every 15 minutes',
+        operatingHours: '05:30-22:30',
         firstBus: '05:30',
         lastBus: '22:30',
         fare: 12.0,
@@ -251,19 +255,29 @@ class BusService {
     return stationsWithDistance.take(limit).map((entry) => entry.key).toList();
   }
 
-  List<String> _generateStops(String from, String to) {
+  List<BusStop> _generateStops(String from, String to) {
     final allStops = _stations.map((s) => s.name).toList();
     final fromIndex = allStops.indexOf(from);
     final toIndex = allStops.indexOf(to);
     
     if (fromIndex == -1 || toIndex == -1) {
-      return [from, to];
+      return [
+        BusStop(id: 'from', name: from, latitude: 28.6139, longitude: 77.2090),
+        BusStop(id: 'to', name: to, latitude: 28.6139, longitude: 77.2090),
+      ];
     }
     
     final start = min(fromIndex, toIndex);
     final end = max(fromIndex, toIndex);
     
-    return allStops.sublist(start, end + 1);
+    return _stations.sublist(start, end + 1).map((station) => 
+      BusStop(
+        id: station.id,
+        name: station.name,
+        latitude: station.latitude,
+        longitude: station.longitude,
+      )
+    ).toList();
   }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
