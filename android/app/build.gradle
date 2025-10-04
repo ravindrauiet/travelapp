@@ -60,6 +60,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('release-key.keystore')
+            storePassword 'android'
+            keyAlias 'release'
+            keyPassword 'android'
+        }
     }
 
     buildTypes {
@@ -67,7 +73,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
