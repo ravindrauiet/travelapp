@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import '../models/metro_line.dart';
 import '../models/bus_route.dart';
+import 'gtfs_data_parser.dart';
 
 class MapService {
   static List<MetroLine>? _metroLines;
@@ -12,13 +13,8 @@ class MapService {
     if (_metroLines != null) return _metroLines!;
     
     try {
-      final String response = await rootBundle.loadString('assets/data/delhi_metro_2025.json');
-      final Map<String, dynamic> data = json.decode(response);
-      
-      _metroLines = (data['lines'] as List)
-          .map((lineData) => MetroLine.fromJson(lineData))
-          .toList();
-      
+      // Use accurate GTFS data parser
+      _metroLines = await GTFSDataParser.getMetroLines();
       return _metroLines!;
     } catch (e) {
       print('Error loading metro data: $e');

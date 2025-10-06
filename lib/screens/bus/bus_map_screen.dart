@@ -110,7 +110,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
               infoWindow: InfoWindow(
                 title: 'Bus ${vehicle.routeId}',
                 snippet: 'Speed: ${vehicle.speed?.toStringAsFixed(1) ?? 'N/A'} km/h\n'
-                    'Status: ${_getVehicleStatus(vehicle.currentStatus)}',
+                    'Status: ${_getVehicleStatus(vehicle.currentStatus ?? 'UNKNOWN')}',
               ),
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
               rotation: vehicle.bearing ?? 0,
@@ -126,13 +126,13 @@ class _BusMapScreenState extends State<BusMapScreen> {
     });
   }
 
-  String _getVehicleStatus(int? status) {
+  String _getVehicleStatus(String status) {
     switch (status) {
-      case 0:
+      case 'INCOMING':
         return 'Incoming';
-      case 1:
+      case 'STOPPED':
         return 'Stopped';
-      case 2:
+      case 'IN_TRANSIT':
         return 'In Transit';
       default:
         return 'Unknown';

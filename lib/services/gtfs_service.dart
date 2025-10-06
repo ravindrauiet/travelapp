@@ -152,7 +152,7 @@ class GTFSService {
     
     // Fallback to simulated data
     _agencies = [
-      const GTFSAgency(
+      GTFSAgency(
         agencyId: 'DTC',
         agencyName: 'Delhi Transport Corporation',
         agencyUrl: 'https://dtc.nic.in',
@@ -200,7 +200,7 @@ class GTFSService {
     
     // Fallback to simulated data
     _stops = [
-      const GTFSStop(
+      GTFSStop(
         stopId: 'stop_001',
         stopCode: '001',
         stopName: 'Connaught Place',
@@ -208,7 +208,7 @@ class GTFSService {
         stopLon: 77.2167,
         wheelchairBoarding: 1,
       ),
-      const GTFSStop(
+      GTFSStop(
         stopId: 'stop_002',
         stopCode: '002',
         stopName: 'India Gate',
@@ -216,7 +216,7 @@ class GTFSService {
         stopLon: 77.2295,
         wheelchairBoarding: 1,
       ),
-      const GTFSStop(
+      GTFSStop(
         stopId: 'stop_003',
         stopCode: '003',
         stopName: 'Red Fort',
@@ -224,7 +224,7 @@ class GTFSService {
         stopLon: 77.2410,
         wheelchairBoarding: 0,
       ),
-      const GTFSStop(
+      GTFSStop(
         stopId: 'stop_004',
         stopCode: '004',
         stopName: 'Rajiv Chowk',
@@ -232,7 +232,7 @@ class GTFSService {
         stopLon: 77.2167,
         wheelchairBoarding: 1,
       ),
-      const GTFSStop(
+      GTFSStop(
         stopId: 'stop_005',
         stopCode: '005',
         stopName: 'Dwarka Sector 21',
@@ -279,7 +279,7 @@ class GTFSService {
     
     // Fallback to simulated data
     _routes = [
-      const GTFSRoute(
+      GTFSRoute(
         routeId: 'route_001',
         agencyId: 'DTC',
         routeShortName: '1',
@@ -288,7 +288,7 @@ class GTFSService {
         routeColor: 'FF0000',
         routeTextColor: 'FFFFFF',
       ),
-      const GTFSRoute(
+      GTFSRoute(
         routeId: 'route_002',
         agencyId: 'DTC',
         routeShortName: '2',
@@ -297,7 +297,7 @@ class GTFSService {
         routeColor: '00FF00',
         routeTextColor: '000000',
       ),
-      const GTFSRoute(
+      GTFSRoute(
         routeId: 'route_003',
         agencyId: 'DTC',
         routeShortName: '3',
@@ -316,14 +316,14 @@ class GTFSService {
     
     // Simulated data - in real implementation, fetch from trips.txt
     _trips = [
-      const GTFSTrip(
+      GTFSTrip(
         routeId: 'route_001',
         serviceId: 'weekday',
         tripId: 'trip_001_1',
         tripHeadsign: 'Connaught Place',
         directionId: 0,
       ),
-      const GTFSTrip(
+      GTFSTrip(
         routeId: 'route_001',
         serviceId: 'weekday',
         tripId: 'trip_001_2',
@@ -340,14 +340,14 @@ class GTFSService {
     
     // Simulated data - in real implementation, fetch from stop_times.txt
     _stopTimes = [
-      const GTFSStopTime(
+      GTFSStopTime(
         tripId: 'trip_001_1',
         arrivalTime: '08:00:00',
         departureTime: '08:00:00',
         stopId: 'stop_003',
         stopSequence: 1,
       ),
-      const GTFSStopTime(
+      GTFSStopTime(
         tripId: 'trip_001_1',
         arrivalTime: '08:15:00',
         departureTime: '08:15:00',
@@ -385,9 +385,7 @@ class GTFSService {
               currentStatus: vehicleData['current_status'],
               congestionLevel: vehicleData['congestion_level'],
               occupancyStatus: vehicleData['occupancy_status'],
-              timestamp: DateTime.fromMillisecondsSinceEpoch(
-                (vehicleData['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-              ),
+              timestamp: (vehicleData['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
             ));
           }
         }
@@ -417,8 +415,8 @@ class GTFSService {
         longitude: 77.2167 + (0.001 * (now.second % 10)),
         bearing: 45.0,
         speed: 25.0,
-        currentStatus: 1, // In transit
-        timestamp: now,
+        currentStatus: 'IN_TRANSIT', // In transit
+        timestamp: now.millisecondsSinceEpoch,
       ),
       GTFSVehiclePosition(
         vehicleId: 'bus_002',
@@ -429,8 +427,8 @@ class GTFSService {
         longitude: 77.2295 + (0.001 * (now.second % 10)),
         bearing: 90.0,
         speed: 30.0,
-        currentStatus: 1, // In transit
-        timestamp: now,
+        currentStatus: 'IN_TRANSIT', // In transit
+        timestamp: now.millisecondsSinceEpoch,
       ),
     ];
   }

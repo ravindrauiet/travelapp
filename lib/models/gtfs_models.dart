@@ -1,140 +1,116 @@
-// GTFS (General Transit Feed Specification) Models for Delhi Bus Services
-// Based on: https://gtfs.org/documentation/schedule/reference/
+/// GTFS (General Transit Feed Specification) data models
+/// These models represent the raw GTFS data structure
 
 class GTFSAgency {
   final String agencyId;
   final String agencyName;
-  final String agencyUrl;
-  final String agencyTimezone;
+  final String? agencyUrl;
+  final String? agencyTimezone;
   final String? agencyLang;
   final String? agencyPhone;
   final String? agencyFareUrl;
   final String? agencyEmail;
 
-  const GTFSAgency({
+  GTFSAgency({
     required this.agencyId,
     required this.agencyName,
-    required this.agencyUrl,
-    required this.agencyTimezone,
+    this.agencyUrl,
+    this.agencyTimezone,
     this.agencyLang,
     this.agencyPhone,
     this.agencyFareUrl,
     this.agencyEmail,
   });
 
-  factory GTFSAgency.fromCsv(Map<String, String> row) {
+  factory GTFSAgency.fromCsv(Map<String, String> csvRow) {
     return GTFSAgency(
-      agencyId: row['agency_id'] ?? '',
-      agencyName: row['agency_name'] ?? '',
-      agencyUrl: row['agency_url'] ?? '',
-      agencyTimezone: row['agency_timezone'] ?? 'Asia/Kolkata',
-      agencyLang: row['agency_lang'],
-      agencyPhone: row['agency_phone'],
-      agencyFareUrl: row['agency_fare_url'],
-      agencyEmail: row['agency_email'],
+      agencyId: csvRow['agency_id'] ?? '',
+      agencyName: csvRow['agency_name'] ?? '',
+      agencyUrl: csvRow['agency_url'],
+      agencyTimezone: csvRow['agency_timezone'],
+      agencyLang: csvRow['agency_lang'],
+      agencyPhone: csvRow['agency_phone'],
+      agencyFareUrl: csvRow['agency_fare_url'],
+      agencyEmail: csvRow['agency_email'],
     );
   }
 }
 
 class GTFSStop {
   final String stopId;
-  final String stopCode;
+  final String? stopCode;
   final String stopName;
   final String? stopDesc;
   final double stopLat;
   final double stopLon;
-  final String? zoneId;
-  final String? stopUrl;
-  final int? locationType;
-  final String? parentStation;
-  final String? stopTimezone;
   final int? wheelchairBoarding;
-  final String? levelId;
-  final String? platformCode;
 
-  const GTFSStop({
+  GTFSStop({
     required this.stopId,
-    required this.stopCode,
+    this.stopCode,
     required this.stopName,
     this.stopDesc,
     required this.stopLat,
     required this.stopLon,
-    this.zoneId,
-    this.stopUrl,
-    this.locationType,
-    this.parentStation,
-    this.stopTimezone,
     this.wheelchairBoarding,
-    this.levelId,
-    this.platformCode,
   });
 
-  factory GTFSStop.fromCsv(Map<String, String> row) {
+  factory GTFSStop.fromCsv(Map<String, String> csvRow) {
     return GTFSStop(
-      stopId: row['stop_id'] ?? '',
-      stopCode: row['stop_code'] ?? '',
-      stopName: row['stop_name'] ?? '',
-      stopDesc: row['stop_desc'],
-      stopLat: double.tryParse(row['stop_lat'] ?? '0') ?? 0.0,
-      stopLon: double.tryParse(row['stop_lon'] ?? '0') ?? 0.0,
-      zoneId: row['zone_id'],
-      stopUrl: row['stop_url'],
-      locationType: int.tryParse(row['location_type'] ?? '0'),
-      parentStation: row['parent_station'],
-      stopTimezone: row['stop_timezone'],
-      wheelchairBoarding: int.tryParse(row['wheelchair_boarding'] ?? '0'),
-      levelId: row['level_id'],
-      platformCode: row['platform_code'],
+      stopId: csvRow['stop_id'] ?? '',
+      stopCode: csvRow['stop_code'],
+      stopName: csvRow['stop_name'] ?? '',
+      stopDesc: csvRow['stop_desc'],
+      stopLat: double.tryParse(csvRow['stop_lat'] ?? '0') ?? 0.0,
+      stopLon: double.tryParse(csvRow['stop_lon'] ?? '0') ?? 0.0,
+      wheelchairBoarding: int.tryParse(csvRow['wheelchair_boarding'] ?? '0'),
     );
   }
 }
 
 class GTFSRoute {
   final String routeId;
-  final String agencyId;
-  final String routeShortName;
+  final String? agencyId;
+  final String? routeShortName;
   final String routeLongName;
   final String? routeDesc;
-  final int routeType;
+  final int? routeType;
   final String? routeUrl;
   final String? routeColor;
   final String? routeTextColor;
   final int? routeSortOrder;
-  final String? continuousPickup;
-  final String? continuousDropOff;
-  final String? networkId;
+  final int? continuousPickup;
+  final int? continuousDropOff;
 
-  const GTFSRoute({
+  GTFSRoute({
     required this.routeId,
-    required this.agencyId,
-    required this.routeShortName,
+    this.agencyId,
+    this.routeShortName,
     required this.routeLongName,
     this.routeDesc,
-    required this.routeType,
+    this.routeType,
     this.routeUrl,
     this.routeColor,
     this.routeTextColor,
     this.routeSortOrder,
     this.continuousPickup,
     this.continuousDropOff,
-    this.networkId,
   });
 
-  factory GTFSRoute.fromCsv(Map<String, String> row) {
+  factory GTFSRoute.fromCsv(Map<String, String> csvRow) {
     return GTFSRoute(
-      routeId: row['route_id'] ?? '',
-      agencyId: row['agency_id'] ?? '',
-      routeShortName: row['route_short_name'] ?? '',
-      routeLongName: row['route_long_name'] ?? '',
-      routeDesc: row['route_desc'],
-      routeType: int.tryParse(row['route_type'] ?? '3') ?? 3, // 3 = Bus
-      routeUrl: row['route_url'],
-      routeColor: row['route_color'],
-      routeTextColor: row['route_text_color'],
-      routeSortOrder: int.tryParse(row['route_sort_order'] ?? '0'),
-      continuousPickup: row['continuous_pickup'],
-      continuousDropOff: row['continuous_drop_off'],
-      networkId: row['network_id'],
+      routeId: csvRow['route_id'] ?? '',
+      agencyId: csvRow['agency_id'],
+      routeShortName: csvRow['route_short_name'],
+      routeLongName: csvRow['route_long_name'] ?? '',
+      routeDesc: csvRow['route_desc'],
+      routeType: int.tryParse(csvRow['route_type'] ?? '0'),
+      routeUrl: csvRow['route_url'],
+      routeColor: csvRow['route_color'],
+      routeTextColor: csvRow['route_text_color'],
+      routeSortOrder: int.tryParse(csvRow['route_sort_order'] ?? '0'),
+      continuousPickup: int.tryParse(csvRow['continuous_pickup'] ?? '0'),
+      continuousDropOff: int.tryParse(csvRow['continuous_drop_off'] ?? '0'),
     );
   }
 }
@@ -151,7 +127,7 @@ class GTFSTrip {
   final int? wheelchairAccessible;
   final int? bikesAllowed;
 
-  const GTFSTrip({
+  GTFSTrip({
     required this.routeId,
     required this.serviceId,
     required this.tripId,
@@ -164,18 +140,18 @@ class GTFSTrip {
     this.bikesAllowed,
   });
 
-  factory GTFSTrip.fromCsv(Map<String, String> row) {
+  factory GTFSTrip.fromCsv(Map<String, String> csvRow) {
     return GTFSTrip(
-      routeId: row['route_id'] ?? '',
-      serviceId: row['service_id'] ?? '',
-      tripId: row['trip_id'] ?? '',
-      tripHeadsign: row['trip_headsign'],
-      tripShortName: row['trip_short_name'],
-      directionId: int.tryParse(row['direction_id'] ?? '0'),
-      blockId: row['block_id'],
-      shapeId: row['shape_id'],
-      wheelchairAccessible: int.tryParse(row['wheelchair_accessible'] ?? '0'),
-      bikesAllowed: int.tryParse(row['bikes_allowed'] ?? '0'),
+      routeId: csvRow['route_id'] ?? '',
+      serviceId: csvRow['service_id'] ?? '',
+      tripId: csvRow['trip_id'] ?? '',
+      tripHeadsign: csvRow['trip_headsign'],
+      tripShortName: csvRow['trip_short_name'],
+      directionId: int.tryParse(csvRow['direction_id'] ?? '0'),
+      blockId: csvRow['block_id'],
+      shapeId: csvRow['shape_id'],
+      wheelchairAccessible: int.tryParse(csvRow['wheelchair_accessible'] ?? '0'),
+      bikesAllowed: int.tryParse(csvRow['bikes_allowed'] ?? '0'),
     );
   }
 }
@@ -185,44 +161,111 @@ class GTFSStopTime {
   final String arrivalTime;
   final String departureTime;
   final String stopId;
-  final int? stopSequence;
+  final int stopSequence;
   final String? stopHeadsign;
   final int? pickupType;
   final int? dropOffType;
-  final double? continuousPickup;
-  final double? continuousDropOff;
   final double? shapeDistTraveled;
   final int? timepoint;
+  final int? continuousPickup;
+  final int? continuousDropOff;
 
-  const GTFSStopTime({
+  GTFSStopTime({
     required this.tripId,
     required this.arrivalTime,
     required this.departureTime,
     required this.stopId,
-    this.stopSequence,
+    required this.stopSequence,
     this.stopHeadsign,
     this.pickupType,
     this.dropOffType,
-    this.continuousPickup,
-    this.continuousDropOff,
     this.shapeDistTraveled,
     this.timepoint,
+    this.continuousPickup,
+    this.continuousDropOff,
   });
 
-  factory GTFSStopTime.fromCsv(Map<String, String> row) {
+  factory GTFSStopTime.fromCsv(Map<String, String> csvRow) {
     return GTFSStopTime(
-      tripId: row['trip_id'] ?? '',
-      arrivalTime: row['arrival_time'] ?? '',
-      departureTime: row['departure_time'] ?? '',
-      stopId: row['stop_id'] ?? '',
-      stopSequence: int.tryParse(row['stop_sequence'] ?? '0'),
-      stopHeadsign: row['stop_headsign'],
-      pickupType: int.tryParse(row['pickup_type'] ?? '0'),
-      dropOffType: int.tryParse(row['drop_off_type'] ?? '0'),
-      continuousPickup: double.tryParse(row['continuous_pickup'] ?? '0'),
-      continuousDropOff: double.tryParse(row['continuous_drop_off'] ?? '0'),
-      shapeDistTraveled: double.tryParse(row['shape_dist_traveled'] ?? '0'),
-      timepoint: int.tryParse(row['timepoint'] ?? '0'),
+      tripId: csvRow['trip_id'] ?? '',
+      arrivalTime: csvRow['arrival_time'] ?? '',
+      departureTime: csvRow['departure_time'] ?? '',
+      stopId: csvRow['stop_id'] ?? '',
+      stopSequence: int.tryParse(csvRow['stop_sequence'] ?? '0') ?? 0,
+      stopHeadsign: csvRow['stop_headsign'],
+      pickupType: int.tryParse(csvRow['pickup_type'] ?? '0'),
+      dropOffType: int.tryParse(csvRow['drop_off_type'] ?? '0'),
+      shapeDistTraveled: double.tryParse(csvRow['shape_dist_traveled'] ?? '0'),
+      timepoint: int.tryParse(csvRow['timepoint'] ?? '0'),
+      continuousPickup: int.tryParse(csvRow['continuous_pickup'] ?? '0'),
+      continuousDropOff: int.tryParse(csvRow['continuous_drop_off'] ?? '0'),
+    );
+  }
+}
+
+class GTFSCalendar {
+  final String serviceId;
+  final int monday;
+  final int tuesday;
+  final int wednesday;
+  final int thursday;
+  final int friday;
+  final int saturday;
+  final int sunday;
+  final String startDate;
+  final String endDate;
+
+  GTFSCalendar({
+    required this.serviceId,
+    required this.monday,
+    required this.tuesday,
+    required this.wednesday,
+    required this.thursday,
+    required this.friday,
+    required this.saturday,
+    required this.sunday,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  factory GTFSCalendar.fromCsv(Map<String, String> csvRow) {
+    return GTFSCalendar(
+      serviceId: csvRow['service_id'] ?? '',
+      monday: int.tryParse(csvRow['monday'] ?? '0') ?? 0,
+      tuesday: int.tryParse(csvRow['tuesday'] ?? '0') ?? 0,
+      wednesday: int.tryParse(csvRow['wednesday'] ?? '0') ?? 0,
+      thursday: int.tryParse(csvRow['thursday'] ?? '0') ?? 0,
+      friday: int.tryParse(csvRow['friday'] ?? '0') ?? 0,
+      saturday: int.tryParse(csvRow['saturday'] ?? '0') ?? 0,
+      sunday: int.tryParse(csvRow['sunday'] ?? '0') ?? 0,
+      startDate: csvRow['start_date'] ?? '',
+      endDate: csvRow['end_date'] ?? '',
+    );
+  }
+}
+
+class GTFSShape {
+  final String shapeId;
+  final double shapePtLat;
+  final double shapePtLon;
+  final int shapePtSequence;
+  final double? shapeDistTraveled;
+
+  GTFSShape({
+    required this.shapeId,
+    required this.shapePtLat,
+    required this.shapePtLon,
+    required this.shapePtSequence,
+    this.shapeDistTraveled,
+  });
+
+  factory GTFSShape.fromCsv(Map<String, String> csvRow) {
+    return GTFSShape(
+      shapeId: csvRow['shape_id'] ?? '',
+      shapePtLat: double.tryParse(csvRow['shape_pt_lat'] ?? '0') ?? 0.0,
+      shapePtLon: double.tryParse(csvRow['shape_pt_lon'] ?? '0') ?? 0.0,
+      shapePtSequence: int.tryParse(csvRow['shape_pt_sequence'] ?? '0') ?? 0,
+      shapeDistTraveled: double.tryParse(csvRow['shape_dist_traveled'] ?? '0'),
     );
   }
 }
@@ -231,74 +274,48 @@ class GTFSVehiclePosition {
   final String vehicleId;
   final String tripId;
   final String routeId;
-  final int? directionId;
   final double latitude;
   final double longitude;
   final double? bearing;
-  final double? odometer;
   final double? speed;
-  final int? currentStatus;
+  final int timestamp;
+  final String? occupancyStatus;
   final int? congestionLevel;
-  final int? occupancyStatus;
-  final DateTime timestamp;
+  final String? currentStatus;
+  final int? directionId;
+  final double? odometer;
 
-  const GTFSVehiclePosition({
+  GTFSVehiclePosition({
     required this.vehicleId,
     required this.tripId,
     required this.routeId,
-    this.directionId,
     required this.latitude,
     required this.longitude,
     this.bearing,
-    this.odometer,
     this.speed,
-    this.currentStatus,
-    this.congestionLevel,
-    this.occupancyStatus,
     required this.timestamp,
+    this.occupancyStatus,
+    this.congestionLevel,
+    this.currentStatus,
+    this.directionId,
+    this.odometer,
   });
 
   factory GTFSVehiclePosition.fromJson(Map<String, dynamic> json) {
     return GTFSVehiclePosition(
-      vehicleId: json['vehicle']['id'] ?? '',
-      tripId: json['trip']['trip_id'] ?? '',
-      routeId: json['trip']['route_id'] ?? '',
-      directionId: json['trip']['direction_id'],
-      latitude: (json['position']['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude: (json['position']['longitude'] as num?)?.toDouble() ?? 0.0,
-      bearing: (json['position']['bearing'] as num?)?.toDouble(),
-      odometer: (json['position']['odometer'] as num?)?.toDouble(),
-      speed: (json['position']['speed'] as num?)?.toDouble(),
-      currentStatus: json['current_status'],
-      congestionLevel: json['congestion_level'],
-      occupancyStatus: json['occupancy_status'],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        (json['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-      ),
+      vehicleId: json['vehicleId'] ?? '',
+      tripId: json['tripId'] ?? '',
+      routeId: json['routeId'] ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      bearing: (json['bearing'] as num?)?.toDouble(),
+      speed: (json['speed'] as num?)?.toDouble(),
+      timestamp: json['timestamp'] ?? 0,
+      occupancyStatus: json['occupancyStatus'],
+      congestionLevel: json['congestionLevel'],
+      currentStatus: json['currentStatus'],
+      directionId: json['directionId'],
+      odometer: (json['odometer'] as num?)?.toDouble(),
     );
   }
 }
-
-class GTFSRealTimeResponse {
-  final String header;
-  final List<GTFSVehiclePosition> entities;
-
-  const GTFSRealTimeResponse({
-    required this.header,
-    required this.entities,
-  });
-
-  factory GTFSRealTimeResponse.fromJson(Map<String, dynamic> json) {
-    final entities = (json['entity'] as List<dynamic>?)
-        ?.map((e) => GTFSVehiclePosition.fromJson(e as Map<String, dynamic>))
-        .toList() ?? [];
-
-    return GTFSRealTimeResponse(
-      header: json['header']['gtfs_realtime_version'] ?? '',
-      entities: entities,
-    );
-  }
-}
-
-
-

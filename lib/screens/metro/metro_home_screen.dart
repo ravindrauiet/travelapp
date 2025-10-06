@@ -192,6 +192,13 @@ class _MetroHomeScreenState extends State<MetroHomeScreen> {
                       color: AppTheme.metroViolet,
                       onTap: _showNearestStations,
                     ),
+                    FeatureCard(
+                      title: 'GTFS Demo',
+                      subtitle: 'Real data test',
+                      icon: Icons.data_object,
+                      color: AppTheme.metroGreen,
+                      onTap: () => context.go('/metro/gtfs-demo'),
+                    ),
                   ],
                 ),
                 

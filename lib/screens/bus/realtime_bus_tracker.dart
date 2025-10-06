@@ -97,7 +97,7 @@ class _RealtimeBusTrackerState extends State<RealtimeBusTracker> {
           infoWindow: InfoWindow(
             title: 'Bus ${route.routeShortName}',
             snippet: 'Speed: ${vehicle.speed?.toStringAsFixed(1) ?? 'N/A'} km/h\n'
-                'Status: ${_getStatusText(vehicle.currentStatus)}',
+                'Status: ${_getStatusText(vehicle.currentStatus ?? 'UNKNOWN')}',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(
             _getRouteColor(route.routeColor),
@@ -124,13 +124,13 @@ class _RealtimeBusTrackerState extends State<RealtimeBusTracker> {
     }
   }
 
-  String _getStatusText(int? status) {
+  String _getStatusText(String status) {
     switch (status) {
-      case 0:
+      case 'INCOMING':
         return 'Incoming';
-      case 1:
+      case 'STOPPED':
         return 'Stopped';
-      case 2:
+      case 'IN_TRANSIT':
         return 'In Transit';
       default:
         return 'Unknown';
@@ -349,10 +349,10 @@ class _RealtimeBusTrackerState extends State<RealtimeBusTracker> {
     
     final latestUpdate = _vehicles
         .map((v) => v.timestamp)
-        .reduce((a, b) => a.isAfter(b) ? a : b);
+        .reduce((a, b) => DateTime.fromMillisecondsSinceEpoch(a).isAfter(DateTime.fromMillisecondsSinceEpoch(b)) ? a : b);
     
     final now = DateTime.now();
-    final difference = now.difference(latestUpdate);
+    final difference = now.difference(DateTime.fromMillisecondsSinceEpoch(latestUpdate));
     
     if (difference.inMinutes < 1) {
       return 'Just now';
