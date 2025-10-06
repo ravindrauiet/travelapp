@@ -18,6 +18,15 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
   bool _isCalculating = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Load stations when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MetroProvider>().loadStations();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -34,6 +43,39 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
       drawer: _buildDrawer(context),
       body: Consumer<MetroProvider>(
         builder: (context, metroProvider, child) {
+          // Show loading state while stations are being loaded
+          if (metroProvider.isLoading && metroProvider.stations.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading metro stations from GTFS data...'),
+                ],
+              ),
+            );
+          }
+
+          // Show error state if there's an error
+          if (metroProvider.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${metroProvider.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => metroProvider.loadStations(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -60,9 +102,18 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Select your starting and destination stations to calculate the exact fare for your metro journey.',
-                          style: TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Loaded ${metroProvider.stations.length} stations from GTFS data',
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
