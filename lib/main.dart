@@ -24,6 +24,9 @@ import 'screens/transport/transport_home_screen.dart';
 import 'screens/city/tourist_spots_screen.dart';
 import 'screens/city/emergency_screen.dart';
 import 'screens/city/weather_screen.dart';
+import 'screens/games/snake_game_screen.dart';
+import 'screens/games/tetris_game_screen.dart';
+import 'screens/games/games_menu_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() {
@@ -125,6 +128,18 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/weather',
       builder: (context, state) => const WeatherScreen(),
+    ),
+    GoRoute(
+      path: '/games',
+      builder: (context, state) => const GamesMenuScreen(),
+    ),
+    GoRoute(
+      path: '/games/snake',
+      builder: (context, state) => const SnakeGameScreen(),
+    ),
+    GoRoute(
+      path: '/games/tetris',
+      builder: (context, state) => const TetrisGameScreen(),
     ),
   ],
 );

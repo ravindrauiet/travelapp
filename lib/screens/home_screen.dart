@@ -406,6 +406,43 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 
+                // Games Section
+                const SizedBox(height: 24),
+                _buildSectionHeader(
+                  '🎮 Games & Entertainment',
+                  'Have fun while waiting',
+                  () => context.go('/games'),
+                ),
+                const SizedBox(height: 16),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
+                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
+                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  children: [
+                    CompactFeatureCard(
+                      title: 'Snake Game',
+                      subtitle: 'Classic arcade game',
+                      icon: Icons.games,
+                      color: AppTheme.metroGreen,
+                      onTap: () => context.go('/games/snake'),
+                    ),
+                    CompactFeatureCard(
+                      title: 'More Games',
+                      subtitle: 'Coming soon',
+                      icon: Icons.extension,
+                      color: AppTheme.metroMagenta,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('More games coming soon!')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                
                 SizedBox(height: ResponsiveHelper.getSectionSpacing(context)),
                   ],
                 ),

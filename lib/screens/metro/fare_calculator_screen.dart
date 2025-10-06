@@ -418,7 +418,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
             context.go('/transport');
             break;
           case 4:
-            context.go('/weather');
+            context.go('/games/snake');
             break;
         }
       },
@@ -440,8 +440,8 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
           label: 'Transport',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.wb_sunny),
-          label: 'Weather',
+          icon: Icon(Icons.games),
+          label: 'Games',
         ),
       ],
     );

@@ -140,6 +140,14 @@ class AppDrawer extends StatelessWidget {
               context.go('/weather');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.games, color: AppTheme.metroGreen),
+            title: const Text('Games'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/games');
+            },
+          ),
           const Divider(),
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
