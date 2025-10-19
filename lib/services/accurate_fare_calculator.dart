@@ -29,9 +29,9 @@ class AccurateFareCalculator {
 
   // Maximum Permissible Time (MPT) based on fare
   static const Map<String, int> mptLimits = {
-    'short': 65,   // Fare ₹18 and below: 65 minutes
-    'mid': 100,    // Fare up to ₹23: 100 minutes
-    'long': 180,   // Fare above ₹23: 180 minutes
+    'short': 65,   // Fare ₹11 & ₹21: 65 minutes
+    'mid': 100,    // Fare ₹32 & ₹43: 100 minutes
+    'long': 180,   // Fare ₹54 & ₹64: 180 minutes
   };
 
   // Smart card discounts
@@ -114,6 +114,49 @@ class AccurateFareCalculator {
         holiday.day == date.day);
   }
 
+  /// Calculate both smart card and ticket prices
+  static FareComparisonResult calculateFareComparison({
+    required double distance,
+    required DateTime travelTime,
+    required bool isAirportExpress,
+  }) {
+    int baseFare;
+    
+    if (isAirportExpress) {
+      baseFare = calculateAELFare(distance);
+    } else if (isHoliday(travelTime)) {
+      baseFare = calculateHolidayFare(distance);
+    } else {
+      baseFare = calculateNormalDayFare(distance);
+    }
+
+    // Calculate smart card fare with discounts
+    double smartCardSavings = baseFare * smartCardDiscount;
+    int smartCardFare = (baseFare - smartCardSavings).round();
+    
+    // Apply off-peak discount if applicable
+    double offPeakSavings = 0;
+    if (isOffPeakHour(travelTime)) {
+      offPeakSavings = smartCardFare * offPeakDiscount;
+      smartCardFare = (smartCardFare - offPeakSavings).round();
+    }
+
+    // Calculate MPT
+    int mpt = _getMPT(baseFare);
+
+    return FareComparisonResult(
+      baseFare: baseFare,
+      smartCardFare: smartCardFare,
+      ticketFare: baseFare,
+      smartCardSavings: baseFare * smartCardDiscount,
+      offPeakSavings: offPeakSavings,
+      totalSavings: (baseFare * smartCardDiscount) + offPeakSavings,
+      mpt: mpt,
+      isOffPeak: isOffPeakHour(travelTime),
+      isHoliday: isHoliday(travelTime),
+    );
+  }
+
   /// Calculate final fare with all discounts applied
   static FareCalculationResult calculateFare({
     required double distance,
@@ -162,9 +205,9 @@ class AccurateFareCalculator {
 
   /// Get Maximum Permissible Time based on fare
   static int _getMPT(int fare) {
-    if (fare <= 18) return mptLimits['short']!;
-    if (fare <= 23) return mptLimits['mid']!;
-    return mptLimits['long']!;
+    if (fare <= 21) return mptLimits['short']!;  // ₹11 & ₹21: 65 minutes
+    if (fare <= 43) return mptLimits['mid']!;    // ₹32 & ₹43: 100 minutes
+    return mptLimits['long']!;                   // ₹54 & ₹64: 180 minutes
   }
 
   /// Calculate penalty for overstaying
@@ -205,5 +248,34 @@ class FareCalculationResult {
   @override
   String toString() {
     return 'FareCalculationResult(baseFare: $baseFare, finalFare: $finalFare, mpt: $mpt, isOffPeak: $isOffPeak, isHoliday: $isHoliday)';
+  }
+}
+
+class FareComparisonResult {
+  final int baseFare;
+  final int smartCardFare;
+  final int ticketFare;
+  final double smartCardSavings;
+  final double offPeakSavings;
+  final double totalSavings;
+  final int mpt;
+  final bool isOffPeak;
+  final bool isHoliday;
+
+  FareComparisonResult({
+    required this.baseFare,
+    required this.smartCardFare,
+    required this.ticketFare,
+    required this.smartCardSavings,
+    required this.offPeakSavings,
+    required this.totalSavings,
+    required this.mpt,
+    required this.isOffPeak,
+    required this.isHoliday,
+  });
+
+  @override
+  String toString() {
+    return 'FareComparisonResult(baseFare: $baseFare, smartCardFare: $smartCardFare, ticketFare: $ticketFare, totalSavings: $totalSavings, mpt: $mpt, isOffPeak: $isOffPeak, isHoliday: $isHoliday)';
   }
 }

@@ -71,7 +71,7 @@ class MetroProvider extends ChangeNotifier {
     }
   }
 
-  Future<double?> calculateFare(String fromStation, String toStation) async {
+  Future<Map<String, dynamic>?> calculateFare(String fromStation, String toStation) async {
     try {
       return await _metroService.calculateFare(fromStation, toStation);
     } catch (e) {

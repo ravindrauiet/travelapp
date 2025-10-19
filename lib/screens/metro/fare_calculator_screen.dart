@@ -15,7 +15,7 @@ class MetroFareCalculatorScreen extends StatefulWidget {
 class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
   String? _fromStation;
   String? _toStation;
-  double? _calculatedFare;
+  Map<String, dynamic>? _fareData;
   bool _isCalculating = false;
 
   @override
@@ -150,7 +150,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                   onChanged: (value) {
                     setState(() {
                       _fromStation = value;
-                      _calculatedFare = null;
+                      _fareData = null;
                     });
                   },
                 ),
@@ -174,7 +174,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                   onChanged: (value) {
                     setState(() {
                       _toStation = value;
-                      _calculatedFare = null;
+                      _fareData = null;
                     });
                   },
                 ),
@@ -211,48 +211,102 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Result Card
-                if (_calculatedFare != null)
-                  Card(
-                    color: AppTheme.metroBlue.withOpacity(0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.calculate,
-                            size: 48,
-                            color: AppTheme.metroBlue,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '₹${_calculatedFare!.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.metroBlue,
+                // Fare Results - Two Small Cards Side by Side
+                if (_fareData != null)
+                  Row(
+                    children: [
+                      // Normal Ticket Fare Card
+                      Expanded(
+                        child: Card(
+                          color: Colors.orange.withOpacity(0.1),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.confirmation_number,
+                                  size: 32,
+                                  color: Colors.orange,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${_fareData!['ticketFare']}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Ticket Fare',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Estimated Fare',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildFareInfo('From', _fromStation!),
-                              const Icon(Icons.arrow_forward, color: Colors.grey),
-                              _buildFareInfo('To', _toStation!),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      
+                      const SizedBox(width: 12),
+                      
+                      // Smart Card Fare Card
+                      Expanded(
+                        child: Card(
+                          color: AppTheme.metroBlue.withOpacity(0.1),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.credit_card,
+                                  size: 32,
+                                  color: AppTheme.metroBlue,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${_fareData!['smartCardFare']}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.metroBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Smart Card',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Save ₹${_fareData!['totalSavings'].toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 
                 const SizedBox(height: 20),
@@ -272,12 +326,12 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildFareRow('0-2 km', '₹10'),
-                        _buildFareRow('2-5 km', '₹20'),
-                        _buildFareRow('5-12 km', '₹30'),
-                        _buildFareRow('12-21 km', '₹40'),
-                        _buildFareRow('21-32 km', '₹50'),
-                        _buildFareRow('32+ km', '₹60'),
+                        _buildFareRow('0-2 km', '₹11'),
+                        _buildFareRow('2-5 km', '₹21'),
+                        _buildFareRow('5-12 km', '₹32'),
+                        _buildFareRow('12-21 km', '₹43'),
+                        _buildFareRow('21-32 km', '₹54'),
+                        _buildFareRow('32+ km', '₹64'),
                       ],
                     ),
                   ),
@@ -457,10 +511,10 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
     
     try {
       final metroProvider = context.read<MetroProvider>();
-      final fare = await metroProvider.calculateFare(_fromStation!, _toStation!);
+      final fareData = await metroProvider.calculateFare(_fromStation!, _toStation!);
       
       setState(() {
-        _calculatedFare = fare;
+        _fareData = fareData;
         _isCalculating = false;
       });
     } catch (e) {

@@ -132,7 +132,7 @@ class MetroService {
   }
 
   /// Calculate accurate fare between two stations using official DMRC rates
-  Future<double?> calculateFare(String fromStation, String toStation) async {
+  Future<Map<String, dynamic>?> calculateFare(String fromStation, String toStation) async {
     if (_stations == null) {
       await getStations(); // This will load stations with fallback
     }
@@ -143,8 +143,17 @@ class MetroService {
     }
     
     try {
-      final from = _stations!.firstWhere((s) => s.name.toLowerCase().contains(fromStation.toLowerCase()));
-      final to = _stations!.firstWhere((s) => s.name.toLowerCase().contains(toStation.toLowerCase()));
+      // More precise station matching - exact match first, then contains
+      final from = _stations!.firstWhere(
+        (s) => s.name.toLowerCase() == fromStation.toLowerCase() || 
+               s.name.toLowerCase().contains(fromStation.toLowerCase()),
+        orElse: () => throw Exception('From station not found: $fromStation')
+      );
+      final to = _stations!.firstWhere(
+        (s) => s.name.toLowerCase() == toStation.toLowerCase() || 
+               s.name.toLowerCase().contains(toStation.toLowerCase()),
+        orElse: () => throw Exception('To station not found: $toStation')
+      );
     
       // Calculate distance using accurate method
       final distance = AccurateFareCalculator.calculateDistance(
@@ -152,15 +161,39 @@ class MetroService {
         to.latitude, to.longitude
       );
       
-      // Use accurate fare calculator with official August 2025 rates
-      final fareResult = AccurateFareCalculator.calculateFare(
+      print('Fare Calculation Debug:');
+      print('From: ${from.name} (${from.line}) - Lat: ${from.latitude}, Lon: ${from.longitude}');
+      print('To: ${to.name} (${to.line}) - Lat: ${to.latitude}, Lon: ${to.longitude}');
+      print('Distance: ${distance.toStringAsFixed(2)} km');
+      
+      // Use accurate fare calculator with official DMRC rates
+      final fareResult = AccurateFareCalculator.calculateFareComparison(
         distance: distance,
         travelTime: DateTime.now(),
-        isSmartCard: true,
         isAirportExpress: from.line == 'Airport Express' || to.line == 'Airport Express',
       );
       
-      return fareResult.finalFare.toDouble();
+      print('Base Fare: ₹${fareResult.baseFare}');
+      print('Ticket Fare: ₹${fareResult.ticketFare}');
+      print('Smart Card Fare: ₹${fareResult.smartCardFare}');
+      print('Smart Card Discount: ₹${fareResult.smartCardSavings.toStringAsFixed(2)}');
+      print('Off-peak Discount: ₹${fareResult.offPeakSavings.toStringAsFixed(2)}');
+      print('Total Savings: ₹${fareResult.totalSavings.toStringAsFixed(2)}');
+      print('MPT: ${fareResult.mpt} minutes');
+      print('Is Off-peak: ${fareResult.isOffPeak}');
+      print('Is Holiday: ${fareResult.isHoliday}');
+      
+      return {
+        'baseFare': fareResult.baseFare,
+        'smartCardFare': fareResult.smartCardFare,
+        'ticketFare': fareResult.ticketFare,
+        'smartCardSavings': fareResult.smartCardSavings,
+        'offPeakSavings': fareResult.offPeakSavings,
+        'totalSavings': fareResult.totalSavings,
+        'mpt': fareResult.mpt,
+        'isOffPeak': fareResult.isOffPeak,
+        'isHoliday': fareResult.isHoliday,
+      };
     } catch (e) {
       print('Error calculating fare: $e');
       return null;
