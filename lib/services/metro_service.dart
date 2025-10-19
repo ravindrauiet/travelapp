@@ -8,6 +8,8 @@ import 'working_gtfs_parser.dart';
 import 'complete_gtfs_parser.dart';
 import 'accurate_fare_calculator.dart';
 import 'accurate_route_finder.dart';
+import 'gtfs_route_finder.dart';
+import 'improved_route_finder.dart';
 
 class MetroService {
   // Use GTFS data instead of hardcoded stations
@@ -108,14 +110,49 @@ class MetroService {
     
     final stations = _stations ?? [];
     
-    // Use accurate route finder with Dijkstra's algorithm
-    return await AccurateRouteFinder.findOptimalRoute(
-      fromStationName: fromStation,
-      toStationName: toStation,
-      stations: stations,
-      travelTime: DateTime.now(),
-      isSmartCard: true, // Default to smart card for better pricing
-    );
+    print('MetroService: Finding route from $fromStation to $toStation');
+    print('MetroService: Using ${stations.length} stations');
+    
+    // Use improved route finder for better cross-line journey handling
+    try {
+      final routes = await ImprovedRouteFinder.findRoute(
+        fromStationName: fromStation,
+        toStationName: toStation,
+        stations: stations,
+        travelTime: DateTime.now(),
+        isSmartCard: true, // Default to smart card for better pricing
+      );
+      
+      print('MetroService: Improved route finder returned ${routes.length} routes');
+      return routes;
+    } catch (e) {
+      print('MetroService: Improved route finder failed: $e, falling back to GTFS route finder');
+      
+      // Fallback to GTFS route finder
+      try {
+        final routes = await GTFSRouteFinder.findRoute(
+          fromStationName: fromStation,
+          toStationName: toStation,
+          stations: stations,
+          travelTime: DateTime.now(),
+          isSmartCard: true,
+        );
+        
+        print('MetroService: GTFS route finder returned ${routes.length} routes');
+        return routes;
+      } catch (e2) {
+        print('MetroService: GTFS route finder also failed: $e2, falling back to accurate route finder');
+        
+        // Final fallback to accurate route finder
+        return await AccurateRouteFinder.findOptimalRoute(
+          fromStationName: fromStation,
+          toStationName: toStation,
+          stations: stations,
+          travelTime: DateTime.now(),
+          isSmartCard: true,
+        );
+      }
+    }
   }
   
   /// Calculate number of stations between two stations on the same line

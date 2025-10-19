@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/metro_provider.dart';
 import '../../models/metro_route.dart';
 import '../../utils/app_theme.dart';
+import '../../widgets/searchable_station_dropdown.dart';
 
 class MetroRouteFinderScreen extends StatefulWidget {
   const MetroRouteFinderScreen({super.key});
@@ -18,6 +19,15 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
   bool _isSearching = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Load stations when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MetroProvider>().loadStations();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -27,10 +37,11 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
       ),
       body: Consumer<MetroProvider>(
         builder: (context, metroProvider, child) {
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Instructions
                 Card(
@@ -57,6 +68,44 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                           'Find the fastest metro route between two stations with detailed information about line changes and journey time.',
                           style: TextStyle(color: Colors.grey),
                         ),
+                        const SizedBox(height: 8),
+                        if (metroProvider.isLoading)
+                          const Row(
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Loading stations from GTFS data...',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          )
+                        else if (metroProvider.error != null)
+                          Text(
+                            'Error: ${metroProvider.error}',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          )
+                        else
+                          Text(
+                            'Loaded ${metroProvider.stations.length} stations from GTFS data',
+                            style: TextStyle(
+                              color: metroProvider.stations.isEmpty ? Colors.red : Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -64,7 +113,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // From Station Dropdown
+                // From Station Search
                 const Text(
                   'From Station',
                   style: TextStyle(
@@ -73,29 +122,28 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _fromStation,
-                  decoration: const InputDecoration(
-                    hintText: 'Select starting station',
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  items: metroProvider.stations.map((station) {
-                    return DropdownMenuItem<String>(
-                      value: station.name,
-                      child: Text(station.name),
-                    );
-                  }).toList(),
+                SearchableStationDropdown(
+                  stations: metroProvider.stations,
+                  selectedStation: _fromStation,
+                  hintText: metroProvider.isLoading 
+                    ? 'Loading stations...' 
+                    : metroProvider.stations.isEmpty 
+                      ? 'No stations available' 
+                      : 'Search and select starting station',
+                  prefixIcon: Icons.location_on,
                   onChanged: (value) {
-                    setState(() {
-                      _fromStation = value;
-                      _routes = [];
-                    });
+                    if (metroProvider.stations.isNotEmpty) {
+                      setState(() {
+                        _fromStation = value;
+                        _routes = [];
+                      });
+                    }
                   },
                 ),
                 
                 const SizedBox(height: 20),
                 
-                // To Station Dropdown
+                // To Station Search
                 const Text(
                   'To Station',
                   style: TextStyle(
@@ -104,23 +152,22 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _toStation,
-                  decoration: const InputDecoration(
-                    hintText: 'Select destination station',
-                    prefixIcon: Icon(Icons.flag),
-                  ),
-                  items: metroProvider.stations.map((station) {
-                    return DropdownMenuItem<String>(
-                      value: station.name,
-                      child: Text(station.name),
-                    );
-                  }).toList(),
+                SearchableStationDropdown(
+                  stations: metroProvider.stations,
+                  selectedStation: _toStation,
+                  hintText: metroProvider.isLoading 
+                    ? 'Loading stations...' 
+                    : metroProvider.stations.isEmpty 
+                      ? 'No stations available' 
+                      : 'Search and select destination station',
+                  prefixIcon: Icons.flag,
                   onChanged: (value) {
-                    setState(() {
-                      _toStation = value;
-                      _routes = [];
-                    });
+                    if (metroProvider.stations.isNotEmpty) {
+                      setState(() {
+                        _toStation = value;
+                        _routes = [];
+                      });
+                    }
                   },
                 ),
                 
@@ -166,30 +213,22 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _routes.length,
-                      itemBuilder: (context, index) {
-                        final route = _routes[index];
-                        return _buildRouteCard(route);
-                      },
-                    ),
-                  ),
+                  ..._routes.map((route) => _buildRouteCard(route)).toList(),
                 ] else if (_isSearching) ...[
-                  const Expanded(
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                  const SizedBox(height: 100),
+                  const Center(
+                    child: CircularProgressIndicator(),
                   ),
+                  const SizedBox(height: 100),
                 ] else if (_fromStation != null && _toStation != null) ...[
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'No routes found. Please try different stations.',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                  const SizedBox(height: 100),
+                  const Center(
+                    child: Text(
+                      'No routes found. Please try different stations.',
+                      style: TextStyle(color: Colors.grey),
                     ),
                   ),
+                  const SizedBox(height: 100),
                 ],
               ],
             ),
@@ -210,8 +249,16 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
       _isSearching = true;
     });
     
+    print('Route Finder: Searching route from $_fromStation to $_toStation');
+    print('Route Finder: Available stations: ${context.read<MetroProvider>().stations.length}');
+    
     final metroProvider = context.read<MetroProvider>();
     final routes = await metroProvider.findRoute(_fromStation!, _toStation!);
+    
+    print('Route Finder: Found ${routes.length} routes');
+    for (int i = 0; i < routes.length; i++) {
+      print('Route ${i + 1}: ${routes[i].totalTime} minutes, ${routes[i].totalStations} stations, ${routes[i].interchangeStations.length} interchanges');
+    }
     
     setState(() {
       _routes = routes;
@@ -221,105 +268,336 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
 
   Widget _buildRouteCard(MetroRoute route) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Route Header
+            // Route Header with comprehensive info
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.metroRed.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${route.totalTime} min',
-                    style: const TextStyle(
-                      color: AppTheme.metroRed,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.metroBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '₹${route.totalFare.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: AppTheme.metroBlue,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Route ${_routes.indexOf(route) + 1}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.metroRed,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${route.fromStation} → ${route.toStation}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  '${route.totalStations} stations',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.metroRed.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.access_time, size: 16, color: AppTheme.metroRed),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${route.totalTime} min',
+                            style: const TextStyle(
+                              color: AppTheme.metroRed,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.metroBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.currency_rupee, size: 16, color: AppTheme.metroBlue),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${route.totalFare.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: AppTheme.metroBlue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
             
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             
-            // Route Path
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    route.fromStation,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_forward, color: Colors.grey, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    route.toStation,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+            // Journey Summary
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryItem(Icons.train, '${route.totalStations}', 'Stations'),
+                  _buildSummaryItem(Icons.swap_horiz, '${route.interchangeStations.length}', 'Interchanges'),
+                  _buildSummaryItem(Icons.route, '${route.segments.length}', 'Segments'),
+                ],
+              ),
             ),
             
+            const SizedBox(height: 16),
+            
+            // Detailed Route Segments
+            const Text(
+              'Journey Details',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.metroRed,
+              ),
+            ),
             const SizedBox(height: 12),
             
-            // Route Segments
-            ...route.segments.map((segment) => _buildSegment(segment)),
+            ...route.segments.asMap().entries.map((entry) {
+              final index = entry.key;
+              final segment = entry.value;
+              return _buildDetailedSegment(segment, index + 1, route.segments.length);
+            }),
             
             if (route.interchangeStations.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.swap_horiz, size: 20, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Interchange Stations',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            route.interchangeStations.join(', '),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 12),
+            
+            // Additional Tips
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
                 children: [
-                  const Icon(Icons.swap_horiz, size: 16, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Interchange at: ${route.interchangeStations.join(', ')}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w500,
+                  const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Tip: Arrive 5 minutes early for interchanges. Smart card saves 10% on fares.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, size: 20, color: AppTheme.metroRed),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.metroRed,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailedSegment(RouteSegment segment, int segmentNumber, int totalSegments) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '$segmentNumber',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      segment.line,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.metroRed,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${segment.fromStation} → ${segment.toStation}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${segment.timeMinutes} min',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.currency_rupee, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${segment.fare.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.train, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                '${segment.stationsCount} stations',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey,
+                ),
+              ),
+              const Spacer(),
+              if (segmentNumber < totalSegments)
+                const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.orange),
+            ],
+          ),
+        ],
       ),
     );
   }
