@@ -62,7 +62,7 @@ class AccurateFareCalculator {
   static String _getFareSlab(double distance) {
     if (distance <= 2) return '0-2';
     if (distance <= 5) return '2-5';
-    if (distance <= 12) return '12-5';
+    if (distance <= 12) return '5-12';
     if (distance <= 21) return '12-21';
     if (distance <= 32) return '21-32';
     return '32+';

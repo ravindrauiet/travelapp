@@ -24,10 +24,13 @@ class MetroProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('MetroProvider: Starting to load stations...');
       _stations = await _metroService.getStations();
+      print('MetroProvider: Loaded ${_stations.length} stations');
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      print('MetroProvider: Error loading stations: $e');
       _error = 'Error loading metro stations: $e';
       _isLoading = false;
       notifyListeners();
@@ -68,9 +71,9 @@ class MetroProvider extends ChangeNotifier {
     }
   }
 
-  double? calculateFare(String fromStation, String toStation) {
+  Future<double?> calculateFare(String fromStation, String toStation) async {
     try {
-      return _metroService.calculateFare(fromStation, toStation);
+      return await _metroService.calculateFare(fromStation, toStation);
     } catch (e) {
       _error = 'Error calculating fare: $e';
       notifyListeners();

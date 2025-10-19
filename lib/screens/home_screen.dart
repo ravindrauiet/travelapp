@@ -226,35 +226,35 @@ class _HomeScreenState extends State<HomeScreen>
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
-                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  crossAxisCount: 4, // More compact grid
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.0, // Square boxes
                   children: [
                     CompactFeatureCard(
                       title: 'Fare Calculator',
-                      subtitle: 'Calculate fare',
+                      subtitle: '',
                       icon: Icons.calculate,
                       color: AppTheme.metroBlue,
                       onTap: () => context.go('/metro/fare-calculator'),
                     ),
                     CompactFeatureCard(
                       title: 'Route Finder',
-                      subtitle: 'Find best route',
+                      subtitle: '',
                       icon: Icons.route,
                       color: AppTheme.metroRed,
                       onTap: () => context.go('/metro/route-finder'),
                     ),
                     CompactFeatureCard(
                       title: 'Live Updates',
-                      subtitle: 'Real-time info',
+                      subtitle: '',
                       icon: Icons.update,
                       color: AppTheme.metroGreen,
                       onTap: () => context.go('/metro/live-updates'),
                     ),
                     CompactFeatureCard(
                       title: 'Metro Map',
-                      subtitle: 'Interactive map',
+                      subtitle: '',
                       icon: Icons.map,
                       color: AppTheme.metroViolet,
                       onTap: () => context.go('/metro/map'),
@@ -274,35 +274,35 @@ class _HomeScreenState extends State<HomeScreen>
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
-                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  crossAxisCount: 4, // More compact grid
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.0, // Square boxes
                   children: [
                     CompactFeatureCard(
                       title: 'Route Finder',
-                      subtitle: 'Find bus routes',
+                      subtitle: '',
                       icon: Icons.directions_bus,
                       color: AppTheme.infoColor,
                       onTap: () => context.go('/bus/route-finder'),
                     ),
                     CompactFeatureCard(
                       title: 'Stop Locator',
-                      subtitle: 'Find bus stops',
+                      subtitle: '',
                       icon: Icons.bus_alert,
                       color: AppTheme.warningColor,
                       onTap: () => context.go('/bus/stop-locator'),
                     ),
                     CompactFeatureCard(
                       title: 'Live Timing',
-                      subtitle: 'Real-time schedule',
+                      subtitle: '',
                       icon: Icons.schedule,
                       color: AppTheme.metroOrange,
                       onTap: () => context.go('/bus'),
                     ),
                     CompactFeatureCard(
                       title: 'Bus Map',
-                      subtitle: 'Route map',
+                      subtitle: '',
                       icon: Icons.map,
                       color: AppTheme.metroPink,
                       onTap: () => context.go('/bus/map'),
@@ -336,10 +336,10 @@ class _HomeScreenState extends State<HomeScreen>
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
-                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  crossAxisCount: 4, // More compact grid
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.0, // Square boxes
                   children: [
                     CompactFeatureCard(
                       title: 'Auto & Cab',
@@ -370,10 +370,10 @@ class _HomeScreenState extends State<HomeScreen>
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
-                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  crossAxisCount: 4, // More compact grid
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.0, // Square boxes
                   children: [
                     CompactFeatureCard(
                       title: 'Tourist Spots',
@@ -417,28 +417,31 @@ class _HomeScreenState extends State<HomeScreen>
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: ResponsiveHelper.getGridCrossAxisCount(context),
-                  crossAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  mainAxisSpacing: ResponsiveHelper.getGridSpacing(context),
-                  childAspectRatio: ResponsiveHelper.getGridChildAspectRatio(context),
+                  crossAxisCount: 4, // More games in a row
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.0, // Square boxes
                   children: [
                     CompactFeatureCard(
-                      title: 'Snake Game',
-                      subtitle: 'Classic arcade game',
+                      title: 'Snake',
+                      subtitle: '', // Remove subtitle
                       icon: Icons.games,
                       color: AppTheme.metroGreen,
                       onTap: () => context.go('/games/snake'),
                     ),
                     CompactFeatureCard(
-                      title: 'More Games',
-                      subtitle: 'Coming soon',
+                      title: 'Tetris',
+                      subtitle: '', // Remove subtitle
                       icon: Icons.extension,
+                      color: AppTheme.metroBlue,
+                      onTap: () => context.go('/games/tetris'),
+                    ),
+                    CompactFeatureCard(
+                      title: 'More',
+                      subtitle: '', // Remove subtitle
+                      icon: Icons.more_horiz,
                       color: AppTheme.metroMagenta,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('More games coming soon!')),
-                        );
-                      },
+                      onTap: () => context.go('/games'),
                     ),
                   ],
                 ),

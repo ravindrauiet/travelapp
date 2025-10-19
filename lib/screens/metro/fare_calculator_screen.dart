@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/metro_provider.dart';
 import '../../utils/app_theme.dart';
+import '../../widgets/searchable_station_dropdown.dart';
 
 class MetroFareCalculatorScreen extends StatefulWidget {
   const MetroFareCalculatorScreen({super.key});
@@ -76,7 +77,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
             );
           }
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,13 +109,23 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Loaded ${metroProvider.stations.length} stations from GTFS data',
+                          'Loaded ${metroProvider.stations.length} stations from data',
                           style: const TextStyle(
                             color: Colors.green,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (metroProvider.stations.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Sample stations: ${metroProvider.stations.take(3).map((s) => s.name).join(', ')}...',
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -122,7 +133,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // From Station Dropdown
+                // From Station Search
                 const Text(
                   'From Station',
                   style: TextStyle(
@@ -131,18 +142,11 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _fromStation,
-                  decoration: const InputDecoration(
-                    hintText: 'Select starting station',
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  items: metroProvider.stations.map((station) {
-                    return DropdownMenuItem<String>(
-                      value: station.name,
-                      child: Text(station.name),
-                    );
-                  }).toList(),
+                SearchableStationDropdown(
+                  stations: metroProvider.stations,
+                  selectedStation: _fromStation,
+                  hintText: 'Search and select starting station',
+                  prefixIcon: Icons.location_on,
                   onChanged: (value) {
                     setState(() {
                       _fromStation = value;
@@ -153,7 +157,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // To Station Dropdown
+                // To Station Search
                 const Text(
                   'To Station',
                   style: TextStyle(
@@ -162,18 +166,11 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _toStation,
-                  decoration: const InputDecoration(
-                    hintText: 'Select destination station',
-                    prefixIcon: Icon(Icons.flag),
-                  ),
-                  items: metroProvider.stations.map((station) {
-                    return DropdownMenuItem<String>(
-                      value: station.name,
-                      child: Text(station.name),
-                    );
-                  }).toList(),
+                SearchableStationDropdown(
+                  stations: metroProvider.stations,
+                  selectedStation: _toStation,
+                  hintText: 'Search and select destination station',
+                  prefixIcon: Icons.flag,
                   onChanged: (value) {
                     setState(() {
                       _toStation = value;
@@ -458,16 +455,29 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
       _isCalculating = true;
     });
     
-    // Simulate calculation delay
-    await Future.delayed(const Duration(seconds: 1));
-    
-    final metroProvider = context.read<MetroProvider>();
-    final fare = metroProvider.calculateFare(_fromStation!, _toStation!);
-    
-    setState(() {
-      _calculatedFare = fare;
-      _isCalculating = false;
-    });
+    try {
+      final metroProvider = context.read<MetroProvider>();
+      final fare = await metroProvider.calculateFare(_fromStation!, _toStation!);
+      
+      setState(() {
+        _calculatedFare = fare;
+        _isCalculating = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isCalculating = false;
+      });
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error calculating fare: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildFareInfo(String label, String station) {

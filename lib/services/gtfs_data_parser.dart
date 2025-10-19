@@ -68,11 +68,16 @@ class GTFSDataParser {
     if (_stops != null) return _stops!;
     
     try {
+      print('GTFS: Loading stops.txt...');
       final data = await rootBundle.loadString('$_gtfsDataPath/stops.txt');
       final csvData = const CsvToListConverter().convert(data);
       
+      print('GTFS: Parsed ${csvData.length} rows from stops.txt');
+      
       if (csvData.isNotEmpty) {
         final headers = csvData[0].map((e) => e.toString()).toList();
+        print('GTFS: Headers: $headers');
+        
         _stops = csvData.skip(1).map((row) {
           final rowMap = <String, String>{};
           for (int i = 0; i < headers.length && i < row.length; i++) {
@@ -80,6 +85,8 @@ class GTFSDataParser {
           }
           return GTFSStop.fromCsv(rowMap);
         }).toList();
+        
+        print('GTFS: Successfully parsed ${_stops!.length} stops');
       }
       
       return _stops ?? [];
@@ -94,11 +101,16 @@ class GTFSDataParser {
     if (_routes != null) return _routes!;
     
     try {
+      print('GTFS: Loading routes.txt...');
       final data = await rootBundle.loadString('$_gtfsDataPath/routes.txt');
       final csvData = const CsvToListConverter().convert(data);
       
+      print('GTFS: Parsed ${csvData.length} rows from routes.txt');
+      
       if (csvData.isNotEmpty) {
         final headers = csvData[0].map((e) => e.toString()).toList();
+        print('GTFS: Route headers: $headers');
+        
         _routes = csvData.skip(1).map((row) {
           final rowMap = <String, String>{};
           for (int i = 0; i < headers.length && i < row.length; i++) {
@@ -106,6 +118,8 @@ class GTFSDataParser {
           }
           return GTFSRoute.fromCsv(rowMap);
         }).toList();
+        
+        print('GTFS: Successfully parsed ${_routes!.length} routes');
       }
       
       return _routes ?? [];
@@ -175,9 +189,12 @@ class GTFSDataParser {
   static Future<List<MetroStation>> _convertToMetroStations() async {
     if (_metroStations != null) return _metroStations!;
     
+    print('GTFS: Converting to metro stations...');
     final stops = await _parseStops();
     final routes = await _parseRoutes();
     final trips = await _parseTrips();
+    
+    print('GTFS: Have ${stops.length} stops, ${routes.length} routes, ${trips.length} trips');
     
     // Create a mapping of stop IDs to their routes
     final stopToRouteMap = <String, String>{};

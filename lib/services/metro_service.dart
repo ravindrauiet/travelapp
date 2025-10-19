@@ -2,6 +2,10 @@ import 'dart:math';
 import '../models/metro_station.dart';
 import '../models/metro_route.dart';
 import 'gtfs_data_parser.dart';
+import 'metro_data_parser.dart';
+import 'simple_gtfs_parser.dart';
+import 'working_gtfs_parser.dart';
+import 'complete_gtfs_parser.dart';
 import 'accurate_fare_calculator.dart';
 import 'accurate_route_finder.dart';
 
@@ -12,8 +16,52 @@ class MetroService {
   Future<List<MetroStation>> getStations() async {
     // Load accurate GTFS data if not already loaded
     if (_stations == null) {
-      _stations = await GTFSDataParser.getMetroStations();
+      print('MetroService: Starting to load stations...');
+      
+      try {
+        // Try to load from complete GTFS data first
+        print('MetroService: Attempting to load complete GTFS data...');
+        _stations = await CompleteGTFSParser.getAllStations();
+        if (_stations != null && _stations!.isNotEmpty) {
+          print('MetroService: Successfully loaded ${_stations!.length} stations from complete GTFS data');
+          return _stations!;
+        } else {
+          print('MetroService: Complete GTFS data returned empty or null');
+        }
+      } catch (e) {
+        print('MetroService: Complete GTFS data loading failed: $e');
+      }
+      
+      try {
+        // Try to load from complex GTFS data
+        print('MetroService: Attempting to load complex GTFS data...');
+        _stations = await GTFSDataParser.getMetroStations();
+        if (_stations != null && _stations!.isNotEmpty) {
+          print('MetroService: Successfully loaded ${_stations!.length} stations from complex GTFS data');
+          return _stations!;
+        } else {
+          print('MetroService: Complex GTFS data returned empty or null');
+        }
+      } catch (e) {
+        print('MetroService: Complex GTFS data loading failed: $e');
+      }
+      
+      // Fallback to JSON data if GTFS fails
+      try {
+        print('MetroService: Falling back to JSON data...');
+        _stations = await MetroDataParser.getAllStations();
+        if (_stations != null && _stations!.isNotEmpty) {
+          print('MetroService: Successfully loaded ${_stations!.length} stations from JSON data (fallback)');
+          return _stations!;
+        } else {
+          print('MetroService: JSON data also returned empty or null');
+        }
+      } catch (e) {
+        print('MetroService: JSON data loading also failed: $e');
+      }
     }
+    
+    print('MetroService: Returning ${_stations?.length ?? 0} stations');
     return _stations ?? [];
   }
 
@@ -55,7 +103,7 @@ class MetroService {
   /// Find optimal route between two stations using accurate algorithms
   Future<List<MetroRoute>> findRoute(String fromStation, String toStation) async {
     if (_stations == null) {
-      _stations = await GTFSDataParser.getMetroStations();
+      await getStations(); // This will load stations with fallback
     }
     
     final stations = _stations ?? [];
@@ -84,8 +132,13 @@ class MetroService {
   }
 
   /// Calculate accurate fare between two stations using official DMRC rates
-  double? calculateFare(String fromStation, String toStation) {
+  Future<double?> calculateFare(String fromStation, String toStation) async {
     if (_stations == null) {
+      await getStations(); // This will load stations with fallback
+    }
+    
+    if (_stations == null || _stations!.isEmpty) {
+      print('No stations available for fare calculation');
       return null;
     }
     

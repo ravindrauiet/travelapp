@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../models/metro_station.dart';
-import '../models/metro_line.dart';
+import '../models/metro_line.dart' as metro_line;
 
 /// Metro Data Parser for reading from existing JSON files
 /// Uses the data from assets/data/ folder instead of GTFS files
@@ -10,7 +10,7 @@ class MetroDataParser {
   
   // Cache for parsed data
   static List<MetroStation>? _stations;
-  static List<MetroLine>? _metroLines;
+  static List<metro_line.MetroLine>? _metroLines;
   static List<BusRoute>? _busRoutes;
 
   /// Load metro stations from metro_stations.json
@@ -34,12 +34,15 @@ class MetroDataParser {
   }
 
   /// Load metro lines from delhi_metro_2025.json
-  static Future<List<MetroLine>> getMetroLines() async {
+  static Future<List<metro_line.MetroLine>> getMetroLines() async {
     if (_metroLines != null) return _metroLines!;
     
     try {
+      print('MetroDataParser: Loading metro lines from JSON...');
       final data = await rootBundle.loadString('${_dataPath}delhi_metro_2025.json');
       final jsonData = json.decode(data);
+      
+      print('MetroDataParser: Found ${(jsonData['lines'] as List).length} lines in JSON');
       
       _metroLines = (jsonData['lines'] as List).map((lineJson) {
         final stations = (lineJson['stations'] as List).map((stationJson) {
@@ -56,11 +59,19 @@ class MetroDataParser {
           );
         }).toList();
         
-        return MetroLine(
+        print('MetroDataParser: Line ${lineJson['name']} has ${stations.length} stations');
+        
+        return metro_line.MetroLine(
           id: lineJson['id'],
           name: lineJson['name'],
           color: lineJson['color'],
-          stations: stations,
+          stations: stations.map((s) => metro_line.MetroStation(
+            id: s.id,
+            name: s.name,
+            latitude: s.latitude,
+            longitude: s.longitude,
+            isInterchange: s.isInterchange,
+          )).toList(),
         );
       }).toList();
       
@@ -111,25 +122,35 @@ class MetroDataParser {
       }
     }
     
-    // Update interchange lines for each station
-    for (final line in _metroLines!) {
-      for (final station in line.stations) {
-        if (station.isInterchange) {
-          station.interchangeLines = stationToLines[station.name] ?? [];
-        }
-      }
-    }
+    // Note: The metro_line.MetroStation doesn't have interchangeLines property
+    // This is just for compatibility with the main MetroStation class
+    print('MetroDataParser: Found ${stationToLines.length} interchange stations');
   }
 
   /// Get all stations from all lines
   static Future<List<MetroStation>> getAllStations() async {
+    print('MetroDataParser: Getting all stations...');
     final lines = await getMetroLines();
     final allStations = <MetroStation>[];
     
     for (final line in lines) {
-      allStations.addAll(line.stations);
+      // Convert metro_line.MetroStation to MetroStation
+      for (final station in line.stations) {
+        allStations.add(MetroStation(
+          id: station.id,
+          name: station.name,
+          line: line.name,
+          lineColor: line.color,
+          latitude: station.latitude,
+          longitude: station.longitude,
+          facilities: [], // Default empty facilities
+          isInterchange: station.isInterchange,
+          interchangeLines: [], // Will be populated based on interchange status
+        ));
+      }
     }
     
+    print('MetroDataParser: Returning ${allStations.length} stations from ${lines.length} lines');
     return allStations;
   }
 
@@ -152,7 +173,18 @@ class MetroDataParser {
     
     for (final line in lines) {
       if (line.name.toLowerCase() == lineName.toLowerCase()) {
-        return line.stations;
+        // Convert metro_line.MetroStation to MetroStation
+        return line.stations.map((station) => MetroStation(
+          id: station.id,
+          name: station.name,
+          line: line.name,
+          lineColor: line.color,
+          latitude: station.latitude,
+          longitude: station.longitude,
+          facilities: [],
+          isInterchange: station.isInterchange,
+          interchangeLines: [],
+        )).toList();
       }
     }
     

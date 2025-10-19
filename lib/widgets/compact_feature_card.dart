@@ -77,7 +77,7 @@ class _CompactFeatureCardState extends State<CompactFeatureCard>
               onTapCancel: () => _animationController.reverse(),
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: EdgeInsets.all(isMobile ? 12 : 16),
+                padding: EdgeInsets.all(isMobile ? 6 : 8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: LinearGradient(
@@ -95,11 +95,11 @@ class _CompactFeatureCardState extends State<CompactFeatureCard>
                   children: [
                     // Icon container
                     Container(
-                      width: isMobile ? 40 : 48,
-                      height: isMobile ? 40 : 48,
+                      width: isMobile ? 28 : 32,
+                      height: isMobile ? 28 : 32,
                       decoration: BoxDecoration(
                         color: widget.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: widget.color.withOpacity(0.2),
                           width: 1,
@@ -107,12 +107,12 @@ class _CompactFeatureCardState extends State<CompactFeatureCard>
                       ),
                       child: Icon(
                         widget.icon,
-                        size: isMobile ? 20 : 24,
+                        size: isMobile ? 14 : 16,
                         color: widget.color,
                       ),
                     ),
                     
-                    SizedBox(height: isMobile ? 8 : 10),
+                    SizedBox(height: isMobile ? 3 : 4),
                     
                     // Title
                     Text(
@@ -121,7 +121,7 @@ class _CompactFeatureCardState extends State<CompactFeatureCard>
                       style: TextStyle(
                         color: widget.color,
                         fontWeight: FontWeight.w600,
-                        fontSize: isMobile ? 11 : 13,
+                        fontSize: isMobile ? 9 : 11,
                         height: 1.2,
                       ),
                       maxLines: 2,
