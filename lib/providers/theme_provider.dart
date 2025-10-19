@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
   
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
   
   ThemeMode get themeMode => _themeMode;
   
@@ -31,12 +31,12 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _loadTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final themeIndex = prefs.getInt(_themeKey) ?? 0;
+      final themeIndex = prefs.getInt(_themeKey) ?? ThemeMode.light.index;
       _themeMode = ThemeMode.values[themeIndex];
       notifyListeners();
     } catch (e) {
-      // If there's an error loading preferences, use system theme
-      _themeMode = ThemeMode.system;
+      // If there's an error loading preferences, use light theme
+      _themeMode = ThemeMode.light;
     }
   }
   
