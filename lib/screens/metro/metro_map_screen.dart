@@ -24,11 +24,20 @@ class _MetroMapScreenState extends State<MetroMapScreen> {
   bool _showMetro = true;
   bool _showBus = false;
   bool _isLoading = true;
+  bool _googleMapsAvailable = false;
 
   @override
   void initState() {
     super.initState();
+    _checkGoogleMapsAvailability();
     _loadMapData();
+  }
+
+  void _checkGoogleMapsAvailability() {
+    // For web, Google Maps might not be available
+    // We'll assume it's not available and show fallback
+    // This can be enhanced later with proper API key detection
+    _googleMapsAvailable = false;
   }
 
   Future<void> _loadMapData() async {
@@ -161,62 +170,227 @@ class _MetroMapScreenState extends State<MetroMapScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: (GoogleMapController controller) {
-                    _mapController = controller;
-                  },
-                  initialCameraPosition: const CameraPosition(
-                    target: LatLng(28.6139, 77.2090), // Delhi center
-                    zoom: 11.0,
-                  ),
-                  markers: _markers,
-                  polylines: _polylines,
-                  mapType: MapType.normal,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: true,
+          : _buildMapContent(),
+    );
+  }
+
+  Widget _buildMapContent() {
+    return Stack(
+      children: [
+        // Try to show Google Map, fallback to message if not available
+        _buildGoogleMapOrFallback(),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Column(
+            children: [
+              _buildToggleButton(
+                'Metro',
+                _showMetro,
+                Icons.train,
+                () {
+                  setState(() {
+                    _showMetro = !_showMetro;
+                  });
+                  _updateMapMarkers();
+                },
+              ),
+              const SizedBox(height: 8),
+              _buildToggleButton(
+                'Bus',
+                _showBus,
+                Icons.directions_bus,
+                () {
+                  setState(() {
+                    _showBus = !_showBus;
+                  });
+                  _updateMapMarkers();
+                },
+              ),
+            ],
+          ),
+        ),
+        if (ResponsiveHelper.isTablet(context))
+          Positioned(
+            left: 16,
+            top: 16,
+            child: _buildLegend(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGoogleMapOrFallback() {
+    if (!_googleMapsAvailable) {
+      return _buildMapFallback();
+    }
+    
+    return GoogleMap(
+      onMapCreated: (GoogleMapController controller) {
+        _mapController = controller;
+      },
+      initialCameraPosition: const CameraPosition(
+        target: LatLng(28.6139, 77.2090), // Delhi center
+        zoom: 11.0,
+      ),
+      markers: _markers,
+      polylines: _polylines,
+      mapType: MapType.normal,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: true,
+    );
+  }
+
+  Widget _buildMapFallback() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.blue[50]!,
+            Colors.white,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 5,
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Column(
-                    children: [
-                      _buildToggleButton(
-                        'Metro',
-                        _showMetro,
-                        Icons.train,
-                        () {
-                          setState(() {
-                            _showMetro = !_showMetro;
-                          });
-                          _updateMapMarkers();
-                        },
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.map_outlined,
+                      size: 80,
+                      color: AppTheme.metroBlue,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Metro Map',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.metroRed,
                       ),
-                      const SizedBox(height: 8),
-                      _buildToggleButton(
-                        'Bus',
-                        _showBus,
-                        Icons.directions_bus,
-                        () {
-                          setState(() {
-                            _showBus = !_showBus;
-                          });
-                          _updateMapMarkers();
-                        },
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Interactive map is not available in this version.\nUse our route finder for navigation assistance.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                        height: 1.5,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/metro/route-finder');
+                          },
+                          icon: const Icon(Icons.route, size: 20),
+                          label: const Text('Find Routes'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.metroRed,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/metro/fare-calculator');
+                          },
+                          icon: const Icon(Icons.calculate, size: 20),
+                          label: const Text('Calculate Fare'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.metroBlue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Available Features:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      children: [
+                        _buildFeatureChip('Route Planning', Icons.directions),
+                        _buildFeatureChip('Fare Calculator', Icons.currency_rupee),
+                        _buildFeatureChip('Station Info', Icons.info),
+                        _buildFeatureChip('Live Updates', Icons.update),
+                      ],
+                    ),
+                  ],
                 ),
-                if (isTablet)
-                  Positioned(
-                    left: 16,
-                    top: 16,
-                    child: _buildLegend(),
-                  ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.metroBlue),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
             ),
+          ),
+        ],
+      ),
     );
   }
 
