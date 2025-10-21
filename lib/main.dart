@@ -21,13 +21,14 @@ import 'screens/bus/bus_map_screen.dart';
 import 'screens/bus/realtime_bus_tracker.dart';
 import 'screens/bus/api_test_screen.dart';
 import 'screens/transport/transport_home_screen.dart';
-import 'screens/city/tourist_spots_screen.dart';
+import 'screens/city/enhanced_tourist_spots_screen.dart';
 import 'screens/city/emergency_screen.dart';
 import 'screens/city/weather_screen.dart';
 import 'screens/games/snake_game_screen.dart';
 import 'screens/games/tetris_game_screen.dart';
 import 'screens/games/games_menu_screen.dart';
 import 'utils/app_theme.dart';
+import 'widgets/app_scaffold.dart';
 
 void main() {
   runApp(const MetromateApp());
@@ -67,79 +68,79 @@ final GoRouter _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const HomeScreen().withAppScaffold(useCustomScaffold: true),
     ),
     GoRoute(
       path: '/metro',
-      builder: (context, state) => const MetroHomeScreen(),
+      builder: (context, state) => const MetroHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/fare-calculator',
-      builder: (context, state) => const MetroFareCalculatorScreen(),
+      builder: (context, state) => const MetroFareCalculatorScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/route-finder',
-      builder: (context, state) => const MetroRouteFinderScreen(),
+      builder: (context, state) => const MetroRouteFinderScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/live-updates',
-      builder: (context, state) => const MetroLiveUpdatesScreen(),
+      builder: (context, state) => const MetroLiveUpdatesScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/map',
-      builder: (context, state) => const MetroMapScreen(),
+      builder: (context, state) => const MetroMapScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus',
-      builder: (context, state) => const BusHomeScreen(),
+      builder: (context, state) => const BusHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/route-finder',
-      builder: (context, state) => const BusRouteFinderScreen(),
+      builder: (context, state) => const BusRouteFinderScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/stop-locator',
-      builder: (context, state) => const BusStopLocatorScreen(),
+      builder: (context, state) => const BusStopLocatorScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/map',
-      builder: (context, state) => const BusMapScreen(),
+      builder: (context, state) => const BusMapScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/realtime',
-      builder: (context, state) => const RealtimeBusTracker(),
+      builder: (context, state) => const RealtimeBusTracker().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/api-test',
-      builder: (context, state) => const ApiTestScreen(),
+      builder: (context, state) => const ApiTestScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/transport',
-      builder: (context, state) => const TransportHomeScreen(),
+      builder: (context, state) => const TransportHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/tourist-spots',
-      builder: (context, state) => const TouristSpotsScreen(),
+      builder: (context, state) => const EnhancedTouristSpotsScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/emergency',
-      builder: (context, state) => const EmergencyScreen(),
+      builder: (context, state) => const EmergencyScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/weather',
-      builder: (context, state) => const WeatherScreen(),
+      builder: (context, state) => const WeatherScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/games',
-      builder: (context, state) => const GamesMenuScreen(),
+      builder: (context, state) => const GamesMenuScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/games/snake',
-      builder: (context, state) => const SnakeGameScreen(),
+      builder: (context, state) => const SnakeGameScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/games/tetris',
-      builder: (context, state) => const TetrisGameScreen(),
+      builder: (context, state) => const TetrisGameScreen().withAppScaffold(),
     ),
   ],
 );

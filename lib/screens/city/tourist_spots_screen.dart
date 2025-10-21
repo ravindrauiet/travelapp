@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/app_theme.dart';
 
-class TouristSpotsScreen extends StatelessWidget {
+class TouristSpotsScreen extends StatefulWidget {
   const TouristSpotsScreen({super.key});
+
+  @override
+  State<TouristSpotsScreen> createState() => _TouristSpotsScreenState();
+}
+
+class _TouristSpotsScreenState extends State<TouristSpotsScreen> with TickerProviderStateMixin {
+  late TabController _tabController;
+  String _selectedCategory = 'All';
+  
+  final List<String> _categories = ['All', 'Monuments', 'Markets', 'Parks', 'Museums', 'Religious', 'Entertainment'];
 
   @override
   Widget build(BuildContext context) {
