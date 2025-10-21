@@ -14,6 +14,7 @@ import 'screens/metro/fare_calculator_screen.dart';
 import 'screens/metro/route_finder_screen.dart';
 import 'screens/metro/live_updates_screen.dart';
 import 'screens/metro/metro_map_screen.dart';
+import 'screens/metro/simple_pdf_viewer.dart';
 import 'screens/bus/bus_home_screen.dart';
 import 'screens/bus/route_finder_screen.dart';
 import 'screens/bus/stop_locator_screen.dart';
@@ -89,6 +90,13 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/metro/map',
       builder: (context, state) => const MetroMapScreen().withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/metro/pdf-viewer',
+      builder: (context, state) => const SimplePDFViewer(
+        pdfPath: 'assets/pdf/Metro.pdf',
+        title: 'Delhi Metro Map',
+      ).withAppScaffold(),
     ),
     GoRoute(
       path: '/bus',
