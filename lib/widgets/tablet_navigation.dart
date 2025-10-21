@@ -56,7 +56,7 @@ class TabletNavigation extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'DelhiGo',
+                  'Metromate',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,

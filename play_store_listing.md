@@ -1,15 +1,15 @@
-# DelhiGo - Play Store Listing
+# Metromate - Play Store Listing
 
 ## App Name
-**DelhiGo**
+**Metromate**
 
 ## Short Description (80 characters max)
 Your ultimate travel companion for Delhi! Navigate metro, buses & transport.
 
 ## Full Description
-🚇 **DelhiGo - Navigate Delhi Like a Local!**
+🚇 **Metromate - Navigate Delhi Like a Local!**
 
-DelhiGo is your comprehensive travel companion for navigating India's capital city with ease. Whether you're a daily commuter or a first-time visitor, DelhiGo makes traveling through Delhi simple, efficient, and stress-free.
+Metromate is your comprehensive travel companion for navigating India's capital city with ease. Whether you're a daily commuter or a first-time visitor, Metromate makes traveling through Delhi simple, efficient, and stress-free.
 
 ### 🚀 **Key Features:**
 
@@ -40,7 +40,7 @@ DelhiGo is your comprehensive travel companion for navigating India's capital ci
 • Air quality monitoring
 • Local recommendations
 
-### ✨ **Why Choose DelhiGo?**
+### ✨ **Why Choose Metromate?**
 
 • **Real-time Updates**: Get live information about metro and bus services
 • **Offline Maps**: Works without internet for basic navigation
@@ -62,7 +62,7 @@ DelhiGo is your comprehensive travel companion for navigating India's capital ci
 • Material Design 3
 • Smooth animations and transitions
 
-Download DelhiGo today and transform your Delhi travel experience!
+Download Metromate today and transform your Delhi travel experience!
 
 ## Keywords (Comma-separated)
 Delhi, metro, bus, transport, navigation, travel, commute, DTC, Delhi Metro, route finder, fare calculator, real-time, timings, tourist, guide, offline maps, GPS, location
@@ -79,7 +79,7 @@ Everyone
 • Age: 16+ (due to location services)
 
 ## App Icon Description
-Modern green circular icon with a white "D" and navigation symbol, representing Delhi and movement.
+Modern green circular icon with a white "M" and navigation symbol, representing Metromate and movement.
 
 ## Screenshots Description
 1. Home screen showing metro and bus options
@@ -95,8 +95,8 @@ Modern green circular icon with a white "D" and navigation symbol, representing 
 • Optional location permissions for enhanced features
 
 ## Support Information
-• Email: support@delhigo.app
-• Website: www.delhigo.app
+• Email: support@metromate.app
+• Website: www.metromate.app
 • Response time: 24-48 hours
 
 

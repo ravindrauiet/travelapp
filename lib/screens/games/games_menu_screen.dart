@@ -385,7 +385,7 @@ class GamesMenuScreen extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: 'DelhiGo Games',
+      applicationName: 'Metromate Games',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(
         Icons.games,

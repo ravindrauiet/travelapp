@@ -30,11 +30,11 @@ import 'screens/games/games_menu_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() {
-  runApp(const DelhiTravelApp());
+  runApp(const MetromateApp());
 }
 
-class DelhiTravelApp extends StatelessWidget {
-  const DelhiTravelApp({super.key});
+class MetromateApp extends StatelessWidget {
+  const MetromateApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +49,7 @@ class DelhiTravelApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp.router(
-            title: 'DelhiGo',
+            title: 'Metromate',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
