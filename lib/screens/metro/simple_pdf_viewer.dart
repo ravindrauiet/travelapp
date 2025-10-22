@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 import '../../utils/app_theme.dart';
 
 class SimplePDFViewer extends StatefulWidget {
@@ -447,16 +448,33 @@ class _SimplePDFViewerState extends State<SimplePDFViewer> {
     );
   }
 
-  void _openInNewTab() {
+  void _openInNewTab() async {
     try {
-      // For web, open the PDF in a new tab
-      html.window.open('assets/pdf/Metro.pdf', '_blank');
+      if (kIsWeb) {
+        // For web, open the PDF in a new tab
+        final uri = Uri.parse('assets/pdf/Metro.pdf');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        // For mobile, show a message that PDF viewing is not available
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF viewing is available on web version only'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
       
       // Show success message
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Opening PDF in new tab...'),
+            content: Text('Opening PDF...'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),

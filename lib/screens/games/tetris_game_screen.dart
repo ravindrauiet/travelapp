@@ -16,6 +16,7 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
   late TetrisGame _game;
   Timer? _gameTimer;
   bool _isGameRunning = false;
+  Offset? _lastPanPosition;
 
   @override
   void initState() {
@@ -94,6 +95,37 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
     }
   }
 
+  void _handleSwipe(DragUpdateDetails details) {
+    if (_game.gameState != TetrisGameState.playing) return;
+    
+    if (_lastPanPosition == null) {
+      _lastPanPosition = details.globalPosition;
+      return;
+    }
+
+    final delta = details.globalPosition - _lastPanPosition!;
+    final threshold = 50.0; // Minimum distance for a swipe
+
+    if (delta.distance > threshold) {
+      if (delta.dx.abs() > delta.dy.abs()) {
+        // Horizontal swipe
+        if (delta.dx > 0) {
+          _game.moveRight();
+        } else {
+          _game.moveLeft();
+        }
+      } else {
+        // Vertical swipe
+        if (delta.dy > 0) {
+          _game.moveDown();
+        } else {
+          _game.rotate();
+        }
+      }
+      _lastPanPosition = null; // Reset to prevent multiple actions
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -131,18 +163,18 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
               ],
             ),
           ),
-          child: Row(
+          child: Column(
             children: [
-              // Game board
+              // Score board at top
+              _buildScoreBoard(),
+              // Game board in center - takes most space
               Expanded(
-                flex: 3,
                 child: _buildGameBoard(),
               ),
-              // Side panel
-              Expanded(
-                flex: 1,
-                child: _buildSidePanel(),
-              ),
+              // Controls at bottom
+              _buildControls(),
+              // Game status
+              _buildGameStatus(),
             ],
           ),
         ),
@@ -153,39 +185,49 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   Widget _buildGameBoard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: AspectRatio(
           aspectRatio: TetrisGame.boardWidth / TetrisGame.boardHeight,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[700]!, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+          child: GestureDetector(
+            onPanUpdate: _handleSwipe,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.blue[900]!,
+                    Colors.purple[900]!,
+                  ],
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: TetrisGame.boardWidth,
-                  childAspectRatio: 1,
-                ),
-                itemCount: TetrisGame.boardWidth * TetrisGame.boardHeight,
-                itemBuilder: (context, index) {
-                  final x = index % TetrisGame.boardWidth;
-                  final y = index ~/ TetrisGame.boardWidth;
-                  final position = TetrisPosition(x, y);
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue[300]!, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(17),
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: TetrisGame.boardWidth,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: TetrisGame.boardWidth * TetrisGame.boardHeight,
+                  itemBuilder: (context, index) {
+                    final x = index % TetrisGame.boardWidth;
+                    final y = index ~/ TetrisGame.boardWidth;
+                    final position = TetrisPosition(x, y);
 
-                  return _buildGameCell(position);
-                },
+                    return _buildGameCell(position);
+                  },
+                ),
               ),
             ),
           ),
@@ -198,13 +240,20 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
     final color = _game.getPositionColor(position);
     
     return Container(
-      margin: const EdgeInsets.all(0.5),
+      margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: color ?? Colors.grey[800],
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(4),
         border: color != null 
-            ? Border.all(color: Colors.white.withOpacity(0.3), width: 0.5)
+            ? Border.all(color: Colors.white.withOpacity(0.3), width: 1)
             : null,
+        boxShadow: color != null ? [
+          BoxShadow(
+            color: color!.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ] : null,
       ),
     );
   }
@@ -228,27 +277,68 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   Widget _buildScoreBoard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [Colors.blue[50]!, Colors.purple[50]!],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue[300]!, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: Colors.blue.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildScoreCard('Score', _game.score.toString(), Colors.blue),
+          _buildScoreCard('Level', _game.level.toString(), Colors.purple),
+          _buildScoreCard('Lines', _game.linesCleared.toString(), Colors.green),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         children: [
-          _buildScoreItem('Score', _game.score.toString(), AppTheme.metroBlue),
-          const SizedBox(height: 8),
-          _buildScoreItem('High Score', _game.highScore.toString(), AppTheme.metroRed),
-          const SizedBox(height: 8),
-          _buildScoreItem('Level', _game.level.toString(), AppTheme.metroGreen),
-          const SizedBox(height: 8),
-          _buildScoreItem('Lines', _game.linesCleared.toString(), AppTheme.metroOrange),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -346,35 +436,86 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         children: [
-          const Text(
-            'Controls',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+          // Touch instruction - compact
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[100]!, Colors.purple[100]!],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue[300]!, width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.touch_app, color: Colors.blue[600], size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Swipe to control pieces',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
-          _buildControlRow('← →', 'Move'),
-          _buildControlRow('↓', 'Soft Drop'),
-          _buildControlRow('↑', 'Rotate'),
-          _buildControlRow('Space', 'Hard Drop'),
-          _buildControlRow('P', 'Pause'),
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  _isGameRunning ? 'Pause' : 'Play',
+                  _isGameRunning ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  _isGameRunning ? _pauseGame : _startGame,
+                  _isGameRunning ? Colors.orange : Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  'Restart',
+                  Icons.refresh,
+                  _restartGame,
+                  Colors.red,
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, Color color) {
+    return Container(
+      height: 40,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 6,
+          shadowColor: color.withOpacity(0.4),
+        ),
       ),
     );
   }

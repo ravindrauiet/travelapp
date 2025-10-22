@@ -9,7 +9,8 @@
     <application
         android:label="Metromate"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:extractNativeLibs="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -36,6 +37,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Support for 16 KB memory page sizes -->
+        <meta-data
+            android:name="android.app.lib_name"
+            android:value="flutter" />
+        <meta-data
+            android:name="android.app.supports_16kb_pages"
+            android:value="true" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

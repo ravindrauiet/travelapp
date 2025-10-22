@@ -14,12 +14,12 @@ class AppBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -51,7 +51,7 @@ class AppBottomNavigation extends StatelessWidget {
                 icon: Icons.directions_bus_outlined,
                 activeIcon: Icons.directions_bus,
                 label: 'Bus',
-                color: AppTheme.infoColor,
+                color: AppTheme.metroGreen,
               ),
               _buildNavItem(
                 context,
@@ -106,34 +106,24 @@ class AppBottomNavigation extends StatelessWidget {
             break;
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                key: ValueKey(isSelected),
-                color: isSelected ? color : AppTheme.textTertiary,
-                size: 24,
-              ),
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? color : Colors.grey[600],
+              size: 24,
             ),
             const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
+            Text(
+              label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? color : AppTheme.textTertiary,
+                color: isSelected ? color : Colors.grey[600],
               ),
-              child: Text(label),
             ),
           ],
         ),
@@ -141,4 +131,3 @@ class AppBottomNavigation extends StatelessWidget {
     );
   }
 }
-

@@ -107,6 +107,27 @@ class GamesMenuScreen extends StatelessWidget {
                     color: AppTheme.metroBlue,
                     onTap: () => context.go('/games/tetris'),
                   ),
+                  CompactFeatureCard(
+                    title: '2048',
+                    subtitle: 'Number puzzle game',
+                    icon: Icons.calculate,
+                    color: AppTheme.metroOrange,
+                    onTap: () => context.go('/games/2048'),
+                  ),
+                  CompactFeatureCard(
+                    title: 'Flappy Bird',
+                    subtitle: 'Tap to fly game',
+                    icon: Icons.flight,
+                    color: AppTheme.metroRed,
+                    onTap: () => context.go('/games/flappy-bird'),
+                  ),
+                  CompactFeatureCard(
+                    title: 'Memory Game',
+                    subtitle: 'Find matching pairs',
+                    icon: Icons.psychology,
+                    color: AppTheme.metroPurple,
+                    onTap: () => context.go('/games/memory'),
+                  ),
                 ],
               ),
               
@@ -162,9 +183,9 @@ class GamesMenuScreen extends StatelessWidget {
               
               const SizedBox(height: 24),
               
-              // Coming Soon
+              // Game Tips
               const Text(
-                'Coming Soon',
+                'Game Tips',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -178,10 +199,10 @@ class GamesMenuScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _buildComingSoonItem('Pac-Man', 'Classic maze game'),
-                      _buildComingSoonItem('2048', 'Number puzzle game'),
-                      _buildComingSoonItem('Sudoku', 'Logic puzzle game'),
-                      _buildComingSoonItem('Memory Game', 'Test your memory'),
+                      _buildTipItem('🎮', 'Use touch controls for mobile gaming'),
+                      _buildTipItem('🏆', 'Try to beat your high scores'),
+                      _buildTipItem('⏸️', 'Pause games when needed'),
+                      _buildTipItem('🔄', 'Restart anytime to try again'),
                     ],
                   ),
                 ),
@@ -235,52 +256,23 @@ class GamesMenuScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildComingSoonItem(String title, String subtitle) {
+  Widget _buildTipItem(String emoji, String tip) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.schedule,
-              color: Colors.grey,
-              size: 24,
-            ),
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Text(
-            'Soon',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.metroOrange,
-              fontWeight: FontWeight.bold,
+            child: Text(
+              tip,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
             ),
           ),
         ],
@@ -395,9 +387,15 @@ class GamesMenuScreen extends StatelessWidget {
       children: [
         const Text('Enjoy classic games while traveling in Delhi!'),
         const SizedBox(height: 16),
-        const Text('Features:'),
+        const Text('Available Games:'),
         const Text('• Snake Game - Classic arcade fun'),
         const Text('• Tetris - Block puzzle challenge'),
+        const Text('• 2048 - Number puzzle game'),
+        const Text('• Flappy Bird - Tap to fly game'),
+        const Text('• Memory Game - Find matching pairs'),
+        const SizedBox(height: 8),
+        const Text('Features:'),
+        const Text('• Touch controls for mobile'),
         const Text('• High score tracking'),
         const Text('• Pause and resume functionality'),
       ],

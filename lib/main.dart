@@ -8,25 +8,28 @@ import 'providers/metro_provider.dart';
 import 'providers/bus_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/home_screen.dart';
-import 'screens/metro/metro_home_screen.dart';
+import 'screens/professional_home_screen.dart';
+import 'screens/metro/professional_metro_home_screen.dart';
 import 'screens/metro/fare_calculator_screen.dart';
 import 'screens/metro/route_finder_screen.dart';
 import 'screens/metro/live_updates_screen.dart';
 import 'screens/metro/metro_map_screen.dart';
 import 'screens/metro/simple_pdf_viewer.dart';
-import 'screens/bus/bus_home_screen.dart';
+import 'screens/bus/professional_bus_home_screen.dart';
 import 'screens/bus/route_finder_screen.dart';
 import 'screens/bus/stop_locator_screen.dart';
 import 'screens/bus/bus_map_screen.dart';
 import 'screens/bus/realtime_bus_tracker.dart';
 import 'screens/bus/api_test_screen.dart';
-import 'screens/transport/transport_home_screen.dart';
+import 'screens/transport/professional_transport_home_screen.dart';
 import 'screens/city/enhanced_tourist_spots_screen.dart';
 import 'screens/city/emergency_screen.dart';
-import 'screens/city/weather_screen.dart';
+import 'screens/city/professional_weather_screen.dart';
 import 'screens/games/snake_game_screen.dart';
 import 'screens/games/tetris_game_screen.dart';
+import 'screens/games/game_2048_screen.dart';
+import 'screens/games/flappy_bird_screen.dart';
+import 'screens/games/memory_game_screen.dart';
 import 'screens/games/games_menu_screen.dart';
 import 'utils/app_theme.dart';
 import 'widgets/app_scaffold.dart';
@@ -69,11 +72,11 @@ final GoRouter _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen().withAppScaffold(useCustomScaffold: true),
+      builder: (context, state) => const ProfessionalHomeScreen().withAppScaffold(useCustomScaffold: true),
     ),
     GoRoute(
       path: '/metro',
-      builder: (context, state) => const MetroHomeScreen().withAppScaffold(),
+      builder: (context, state) => const ProfessionalMetroHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/fare-calculator',
@@ -100,7 +103,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/bus',
-      builder: (context, state) => const BusHomeScreen().withAppScaffold(),
+      builder: (context, state) => const ProfessionalBusHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/route-finder',
@@ -124,7 +127,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/transport',
-      builder: (context, state) => const TransportHomeScreen().withAppScaffold(),
+      builder: (context, state) => const ProfessionalTransportHomeScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/tourist-spots',
@@ -136,7 +139,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/weather',
-      builder: (context, state) => const WeatherScreen().withAppScaffold(),
+      builder: (context, state) => const ProfessionalWeatherScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/games',
@@ -149,6 +152,18 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/games/tetris',
       builder: (context, state) => const TetrisGameScreen().withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/games/2048',
+      builder: (context, state) => const Game2048Screen().withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/games/flappy-bird',
+      builder: (context, state) => const FlappyBirdScreen().withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/games/memory',
+      builder: (context, state) => const MemoryGameScreen().withAppScaffold(),
     ),
   ],
 );

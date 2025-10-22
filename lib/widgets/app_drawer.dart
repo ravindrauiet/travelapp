@@ -37,10 +37,10 @@ class AppDrawer extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.train,
-                  size: 48,
+                  size: 40,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
                   title,
                   style: const TextStyle(
@@ -69,40 +69,15 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.train, color: AppTheme.metroBlue),
-            title: const Text('Metro Services'),
+            title: const Text('Metro'),
             onTap: () {
               Navigator.pop(context);
               context.go('/metro');
             },
           ),
           ListTile(
-            leading: const Icon(Icons.calculate, color: AppTheme.metroBlue),
-            title: const Text('Fare Calculator'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/fare-calculator');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.route, color: AppTheme.metroRed),
-            title: const Text('Route Finder'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/route-finder');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.update, color: AppTheme.metroGreen),
-            title: const Text('Live Updates'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/live-updates');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.directions_bus, color: AppTheme.infoColor),
-            title: const Text('Bus Services'),
+            leading: const Icon(Icons.directions_bus, color: AppTheme.metroGreen),
+            title: const Text('Bus'),
             onTap: () {
               Navigator.pop(context);
               context.go('/bus');
@@ -117,19 +92,11 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.place, color: AppTheme.metroMagenta),
+            leading: const Icon(Icons.location_city, color: AppTheme.metroPurple),
             title: const Text('Tourist Spots'),
             onTap: () {
               Navigator.pop(context);
               context.go('/tourist-spots');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.emergency, color: AppTheme.errorColor),
-            title: const Text('Emergency'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/emergency');
             },
           ),
           ListTile(
@@ -141,7 +108,15 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.games, color: AppTheme.metroGreen),
+            leading: const Icon(Icons.emergency, color: Colors.red),
+            title: const Text('Emergency'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/emergency');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.games, color: AppTheme.metroOrange),
             title: const Text('Games'),
             onTap: () {
               Navigator.pop(context);
@@ -186,7 +161,7 @@ class AppDrawer extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: 'Delhi Travel Guide',
+      applicationName: 'Metromate',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(
         Icons.train,
@@ -195,13 +170,9 @@ class AppDrawer extends StatelessWidget {
       ),
       children: [
         const Text(
-          'A comprehensive travel and navigation app for Delhi with metro, bus, and other transport features.',
+          'Your Smart Travel Companion for Delhi. Navigate the city with ease using metro, bus, and other transport options.',
         ),
       ],
     );
   }
 }
-
-
-
-

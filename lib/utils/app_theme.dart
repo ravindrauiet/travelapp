@@ -28,6 +28,7 @@ class AppTheme {
   static const Color metroViolet = Color(0xFF8E24AA); // Violet Line
   static const Color metroPink = Color(0xFFE91E63); // Pink Line
   static const Color metroMagenta = Color(0xFF9C27B0); // Magenta Line
+  static const Color metroPurple = Color(0xFF8E24AA); // Purple Line
   static const Color metroOrange = Color(0xFFFF5722); // Orange Line
   static const Color metroGrey = Color(0xFF607D8B); // Grey Line
   static const Color metroAqua = Color(0xFF00BCD4); // Aqua Line
