@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/game_bottom_navigation.dart';
 import '../../widgets/compact_feature_card.dart';
@@ -375,30 +376,142 @@ class GamesMenuScreen extends StatelessWidget {
   }
 
   void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
+    showDialog(
       context: context,
-      applicationName: 'Metromate Games',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(
-        Icons.games,
-        size: 48,
-        color: AppTheme.metroGreen,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.games,
+                color: AppTheme.metroGreen,
+                size: 32,
+              ),
+              const SizedBox(width: 8),
+              const Text('Metromate Games'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Version: 1.0.0',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text('Enjoy classic games while traveling in Delhi!'),
+                const SizedBox(height: 16),
+                const Text(
+                  'Available Games:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text('• Snake Game - Classic arcade fun'),
+                const Text('• Tetris - Block puzzle challenge'),
+                const Text('• 2048 - Number puzzle game'),
+                const Text('• Flappy Bird - Tap to fly game'),
+                const Text('• Memory Game - Find matching pairs'),
+                const SizedBox(height: 16),
+                const Text(
+                  'Features:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text('• Touch controls for mobile'),
+                const Text('• High score tracking'),
+                const Text('• Pause and resume functionality'),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '⚠️ Important Disclaimer',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'This app is not affiliated with, endorsed by, or connected to any government entity including Delhi Metro Rail Corporation (DMRC) or Delhi Transport Corporation (DTC). Metromate is an independent third-party application.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Official Government Sources:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                _buildSourceLink(
+                  context,
+                  'Delhi Metro',
+                  'https://www.delhimetrorail.com',
+                ),
+                const SizedBox(height: 4),
+                _buildSourceLink(
+                  context,
+                  'DTC (Delhi Transport Corporation)',
+                  'https://www.dtc.nic.in',
+                ),
+                const SizedBox(height: 4),
+                _buildSourceLink(
+                  context,
+                  'Delhi Transport Department',
+                  'http://www.delhi.gov.in/transport/',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSourceLink(BuildContext context, String label, String url) {
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            const Icon(Icons.link, size: 16, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.primaryColor,
+                  decoration: TextDecoration.underline,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      children: [
-        const Text('Enjoy classic games while traveling in Delhi!'),
-        const SizedBox(height: 16),
-        const Text('Available Games:'),
-        const Text('• Snake Game - Classic arcade fun'),
-        const Text('• Tetris - Block puzzle challenge'),
-        const Text('• 2048 - Number puzzle game'),
-        const Text('• Flappy Bird - Tap to fly game'),
-        const Text('• Memory Game - Find matching pairs'),
-        const SizedBox(height: 8),
-        const Text('Features:'),
-        const Text('• Touch controls for mobile'),
-        const Text('• High score tracking'),
-        const Text('• Pause and resume functionality'),
-      ],
     );
   }
 }
