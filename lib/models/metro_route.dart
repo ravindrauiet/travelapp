@@ -43,6 +43,7 @@ class RouteSegment {
   final int stationsCount;
   final int timeMinutes;
   final double fare;
+  final List<String> intermediateStations; // List of all station names in this segment
 
   RouteSegment({
     required this.line,
@@ -52,6 +53,7 @@ class RouteSegment {
     required this.stationsCount,
     required this.timeMinutes,
     required this.fare,
+    this.intermediateStations = const [],
   });
 
   factory RouteSegment.fromJson(Map<String, dynamic> json) {
@@ -63,6 +65,7 @@ class RouteSegment {
       stationsCount: json['stationsCount'] ?? 0,
       timeMinutes: json['timeMinutes'] ?? 0,
       fare: (json['fare'] ?? 0.0).toDouble(),
+      intermediateStations: List<String>.from(json['intermediateStations'] ?? []),
     );
   }
 }

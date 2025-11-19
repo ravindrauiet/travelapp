@@ -98,18 +98,20 @@ class WorkingGTFSParser {
   }
 
   /// Get line color from route name
+  /// Routes format: COLOR_Route Name (e.g., RED_Dilshad Garden to Rithala, VIOLET_Kashmere Gate to Badarpur Border)
   static String _getLineColorFromRouteName(String routeName) {
-    if (routeName.contains('RED')) return '#CC0000';
-    if (routeName.contains('YELLOW')) return '#FFD700';
-    if (routeName.contains('BLUE')) return '#0066CC';
-    if (routeName.contains('GREEN')) return '#00AA00';
-    if (routeName.contains('VIOLET')) return '#800080';
-    if (routeName.contains('PINK')) return '#FF69B4';
-    if (routeName.contains('MAGENTA')) return '#FF00FF';
-    if (routeName.contains('GRAY')) return '#808080';
-    if (routeName.contains('AQUA')) return '#00FFFF';
-    if (routeName.contains('ORANGE') || routeName.contains('AIRPORT')) return '#FF8C00';
-    if (routeName.contains('RAPID')) return '#FF1493';
+    final upperName = routeName.toUpperCase();
+    if (upperName.startsWith('RED_')) return '#CC0000';
+    if (upperName.startsWith('YELLOW_')) return '#FFD700';
+    if (upperName.startsWith('BLUE_')) return '#0066CC';
+    if (upperName.startsWith('GREEN_')) return '#00AA00';
+    if (upperName.startsWith('VIOLET_')) return '#800080';
+    if (upperName.startsWith('PINK_')) return '#FF69B4';
+    if (upperName.startsWith('MAGENTA_')) return '#FF00FF';
+    if (upperName.startsWith('GRAY_')) return '#808080';
+    if (upperName.startsWith('AQUA_')) return '#00FFFF';
+    if (upperName.startsWith('ORANGE/AIRPORT_') || upperName.startsWith('ORANGE_') || upperName.contains('AIRPORT_')) return '#FF8C00';
+    if (upperName.startsWith('RAPID_')) return '#FF1493';
     return '#1976D2';
   }
 

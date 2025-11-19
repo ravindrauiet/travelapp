@@ -24,7 +24,11 @@ class CompleteGTFSParser {
       final stopTimesData = await rootBundle.loadString('assets/gtfs_data/stop_times.txt');
       final stopTimesLines = stopTimesData.split('\n').where((line) => line.trim().isNotEmpty).toList();
       
-      print('CompleteGTFS: Loaded ${stopsLines.length} stop lines, ${routesLines.length} route lines, ${stopTimesLines.length} stop_times lines');
+      // Load trips data to map trip_id to route_id
+      final tripsData = await rootBundle.loadString('assets/gtfs_data/trips.txt');
+      final tripsLines = tripsData.split('\n').where((line) => line.trim().isNotEmpty).toList();
+      
+      print('CompleteGTFS: Loaded ${stopsLines.length} stop lines, ${routesLines.length} route lines, ${stopTimesLines.length} stop_times lines, ${tripsLines.length} trips lines');
       
       // Parse stops into a map for quick lookup
       final stopsMap = <String, Map<String, String>>{};
@@ -40,31 +44,128 @@ class CompleteGTFSParser {
         }
       }
       
-      // Parse routes
-      final routeMap = <String, Map<String, String>>{};
+      // Parse routes: route_id -> line info (name and color)
+      // Routes format: COLOR_Route Name (e.g., RED_Dilshad Garden to Rithala, VIOLET_Kashmere Gate to Badarpur Border)
+      final routeToLineMap = <String, Map<String, String>>{};
       for (int i = 1; i < routesLines.length; i++) {
         final routeParts = _parseCsvLine(routesLines[i]);
         if (routeParts.length >= 4) {
           final routeId = routeParts[0];
           final routeLongName = routeParts[3];
-          routeMap[routeId] = {
-            'id': routeId,
-            'name': routeLongName,
-            'color': _getLineColorFromRouteName(routeLongName),
+          final upperName = routeLongName.toUpperCase();
+          
+          String lineName = 'Unknown Line';
+          String lineColor = '#1976D2';
+          
+          if (upperName.startsWith('RED_')) {
+            lineName = 'Red Line';
+            lineColor = '#CC0000';
+          } else if (upperName.startsWith('YELLOW_')) {
+            lineName = 'Yellow Line';
+            lineColor = '#FFD700';
+          } else if (upperName.startsWith('BLUE_')) {
+            lineName = 'Blue Line';
+            lineColor = '#0066CC';
+          } else if (upperName.startsWith('GREEN_')) {
+            lineName = 'Green Line';
+            lineColor = '#00AA00';
+          } else if (upperName.startsWith('VIOLET_')) {
+            lineName = 'Violet Line';
+            lineColor = '#800080';
+          } else if (upperName.startsWith('PINK_')) {
+            lineName = 'Pink Line';
+            lineColor = '#FF69B4';
+          } else if (upperName.startsWith('MAGENTA_')) {
+            lineName = 'Magenta Line';
+            lineColor = '#FF00FF';
+          } else if (upperName.startsWith('GRAY_')) {
+            lineName = 'Gray Line';
+            lineColor = '#808080';
+          } else if (upperName.startsWith('AQUA_')) {
+            lineName = 'Aqua Line';
+            lineColor = '#00FFFF';
+          } else if (upperName.startsWith('ORANGE/AIRPORT_') || upperName.startsWith('ORANGE_') || upperName.contains('AIRPORT_')) {
+            lineName = 'Airport Express';
+            lineColor = '#FF8C00';
+          } else if (upperName.startsWith('RAPID_')) {
+            lineName = 'Rapid Metro';
+            lineColor = '#FF1493';
+          }
+          
+          routeToLineMap[routeId] = {
+            'lineName': lineName,
+            'lineColor': lineColor,
           };
         }
       }
       
-      print('CompleteGTFS: Parsed ${stopsMap.length} stops and ${routeMap.length} routes');
+      // Parse trips: trip_id -> route_id
+      final tripToRouteMap = <String, String>{};
+      for (int i = 1; i < tripsLines.length; i++) {
+        final tripParts = _parseCsvLine(tripsLines[i]);
+        if (tripParts.length >= 3) {
+          tripToRouteMap[tripParts[2]] = tripParts[0]; // trip_id -> route_id
+        }
+      }
       
-      // Get all unique stop IDs from stop_times.txt
-      final servedStopIds = <String>{};
+      print('CompleteGTFS: Parsed ${stopsMap.length} stops, ${routeToLineMap.length} routes, ${tripToRouteMap.length} trips');
+      
+      // Map stop_id -> line info using stop_times -> trips -> routes
+      // For stations on multiple lines (interchanges), use the most common line
+      final stopLineCounts = <String, Map<String, int>>{}; // stopId -> lineName -> count
       for (int i = 1; i < stopTimesLines.length; i++) {
         final stopTimeParts = _parseCsvLine(stopTimesLines[i]);
         if (stopTimeParts.length >= 4) {
-          servedStopIds.add(stopTimeParts[3]); // stop_id is at index 3
+          final tripId = stopTimeParts[0]; // trip_id is at index 0
+          final stopId = stopTimeParts[3]; // stop_id is at index 3
+          
+          // Get route_id from trip_id
+          final routeId = tripToRouteMap[tripId];
+          if (routeId == null) continue;
+          
+          // Get line info from route_id
+          final lineInfo = routeToLineMap[routeId];
+          if (lineInfo == null) continue;
+          
+          final lineName = lineInfo['lineName']!;
+          
+          // Count occurrences of each line for this stop
+          if (!stopLineCounts.containsKey(stopId)) {
+            stopLineCounts[stopId] = {};
+          }
+          stopLineCounts[stopId]![lineName] = (stopLineCounts[stopId]![lineName] ?? 0) + 1;
         }
       }
+      
+      // Determine the primary line for each stop (most common)
+      final stopToLineMap = <String, Map<String, String>>{};
+      for (final entry in stopLineCounts.entries) {
+        final stopId = entry.key;
+        final lineCounts = entry.value;
+        
+        // Find the line with the highest count
+        String mostCommonLine = 'Unknown Line';
+        int maxCount = 0;
+        for (final lineEntry in lineCounts.entries) {
+          if (lineEntry.value > maxCount) {
+            maxCount = lineEntry.value;
+            mostCommonLine = lineEntry.key;
+          }
+        }
+        
+        // Get the color for the most common line
+        final lineColor = _getLineColorFromLineName(mostCommonLine);
+        
+        stopToLineMap[stopId] = {
+          'lineName': mostCommonLine,
+          'lineColor': lineColor,
+        };
+      }
+      
+      print('CompleteGTFS: Mapped ${stopToLineMap.length} stops to lines based on route data');
+      
+      // Get all unique stop IDs
+      final servedStopIds = stopToLineMap.keys.toSet();
       
       print('CompleteGTFS: Found ${servedStopIds.length} unique stations served by metro');
       
@@ -77,9 +178,10 @@ class CompleteGTFSParser {
           final latitude = double.tryParse(stopData['lat']!) ?? 0.0;
           final longitude = double.tryParse(stopData['lon']!) ?? 0.0;
           
-          // Determine line from station name
-          final lineName = _getLineNameFromStation(stationName);
-          final lineColor = _getLineColorFromLineName(lineName);
+          // Get line info from route-based mapping
+          final lineInfo = stopToLineMap[stopId];
+          final lineName = lineInfo?['lineName'] ?? 'Unknown Line';
+          final lineColor = lineInfo?['lineColor'] ?? '#1976D2';
           
           final station = MetroStation(
             id: stopId,
@@ -126,18 +228,20 @@ class CompleteGTFSParser {
   }
 
   /// Get line color from route name
+  /// Routes format: COLOR_Route Name (e.g., RED_Dilshad Garden to Rithala, VIOLET_Kashmere Gate to Badarpur Border)
   static String _getLineColorFromRouteName(String routeName) {
-    if (routeName.contains('RED')) return '#CC0000';
-    if (routeName.contains('YELLOW')) return '#FFD700';
-    if (routeName.contains('BLUE')) return '#0066CC';
-    if (routeName.contains('GREEN')) return '#00AA00';
-    if (routeName.contains('VIOLET')) return '#800080';
-    if (routeName.contains('PINK')) return '#FF69B4';
-    if (routeName.contains('MAGENTA')) return '#FF00FF';
-    if (routeName.contains('GRAY')) return '#808080';
-    if (routeName.contains('AQUA')) return '#00FFFF';
-    if (routeName.contains('ORANGE') || routeName.contains('AIRPORT')) return '#FF8C00';
-    if (routeName.contains('RAPID')) return '#FF1493';
+    final upperName = routeName.toUpperCase();
+    if (upperName.startsWith('RED_')) return '#CC0000';
+    if (upperName.startsWith('YELLOW_')) return '#FFD700';
+    if (upperName.startsWith('BLUE_')) return '#0066CC';
+    if (upperName.startsWith('GREEN_')) return '#00AA00';
+    if (upperName.startsWith('VIOLET_')) return '#800080';
+    if (upperName.startsWith('PINK_')) return '#FF69B4';
+    if (upperName.startsWith('MAGENTA_')) return '#FF00FF';
+    if (upperName.startsWith('GRAY_')) return '#808080';
+    if (upperName.startsWith('AQUA_')) return '#00FFFF';
+    if (upperName.startsWith('ORANGE/AIRPORT_') || upperName.startsWith('ORANGE_') || upperName.contains('AIRPORT_')) return '#FF8C00';
+    if (upperName.startsWith('RAPID_')) return '#FF1493';
     return '#1976D2';
   }
 
@@ -637,8 +741,9 @@ class CompleteGTFSParser {
     return facilities;
   }
 
-  /// Clear cache
+  /// Clear cache - call this if you want to reload with updated route data
   static void clearCache() {
     _stations = null;
+    print('CompleteGTFS: Cache cleared');
   }
 }

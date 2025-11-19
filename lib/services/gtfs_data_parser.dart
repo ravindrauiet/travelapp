@@ -193,119 +193,138 @@ class GTFSDataParser {
     final stops = await _parseStops();
     final routes = await _parseRoutes();
     final trips = await _parseTrips();
+    final stopTimes = await _parseStopTimes();
     
-    print('GTFS: Have ${stops.length} stops, ${routes.length} routes, ${trips.length} trips');
+    print('GTFS: Have ${stops.length} stops, ${routes.length} routes, ${trips.length} trips, ${stopTimes.length} stop times');
     
-    // Create a mapping of stop IDs to their routes
-    final stopToRouteMap = <String, String>{};
-    
-    // Map stops to routes based on trip data
-    for (final trip in trips) {
-      final route = routes.firstWhere(
-        (r) => r.routeId == trip.routeId,
-        orElse: () => routes.first,
-      );
+    // Create mapping: route_id -> line info (name and color)
+    // Routes format: COLOR_Route Name (e.g., RED_Dilshad Garden to Rithala, VIOLET_Kashmere Gate to Badarpur Border)
+    final routeToLineMap = <String, Map<String, String>>{};
+    for (final route in routes) {
+      final routeLongName = route.routeLongName.toUpperCase();
       
-      // Extract line name from route long name
-      String lineName = route.routeLongName;
-      if (lineName.contains('RED')) {
-        lineName = 'Red Line';
-      } else if (lineName.contains('YELLOW')) {
-        lineName = 'Yellow Line';
-      } else if (lineName.contains('BLUE')) {
-        lineName = 'Blue Line';
-      } else if (lineName.contains('GREEN')) {
-        lineName = 'Green Line';
-      } else if (lineName.contains('VIOLET')) {
-        lineName = 'Violet Line';
-      } else if (lineName.contains('PINK')) {
-        lineName = 'Pink Line';
-      } else if (lineName.contains('MAGENTA')) {
-        lineName = 'Magenta Line';
-      } else if (lineName.contains('GRAY')) {
-        lineName = 'Gray Line';
-      } else if (lineName.contains('AQUA')) {
-        lineName = 'Aqua Line';
-      } else if (lineName.contains('ORANGE') || lineName.contains('AIRPORT')) {
-        lineName = 'Airport Express';
-      } else if (lineName.contains('RAPID')) {
-        lineName = 'Rapid Metro';
-      }
-      
-      stopToRouteMap[trip.tripId] = lineName;
-    }
-    
-    _metroStations = stops.map((stop) {
-      // Determine line name and color based on stop characteristics
       String lineName = 'Unknown Line';
       String lineColor = '#1976D2';
       
-      // Map based on station names and known patterns
-      if (stop.stopName.contains('Dwarka') || 
-          stop.stopName.contains('Noida') ||
-          stop.stopName.contains('Vaishali') ||
-          stop.stopName.contains('Yamuna Bank') ||
-          stop.stopName.contains('Akshardham') ||
-          stop.stopName.contains('Mayur Vihar') ||
-          stop.stopName.contains('Botanical Garden')) {
-        lineName = 'Blue Line';
-        lineColor = '#0066CC';
-      } else if (stop.stopName.contains('Rithala') ||
-                 stop.stopName.contains('Dilshad Garden') ||
-                 stop.stopName.contains('Welcome') ||
-                 stop.stopName.contains('Kashmere Gate') ||
-                 stop.stopName.contains('Tis Hazari') ||
-                 stop.stopName.contains('Pul Bangash') ||
-                 stop.stopName.contains('Inderlok') ||
-                 stop.stopName.contains('Rohini') ||
-                 stop.stopName.contains('Shaheed Sthal')) {
+      // Check based on route long name format: COLOR_Route Description
+      if (routeLongName.startsWith('RED_')) {
         lineName = 'Red Line';
         lineColor = '#CC0000';
-      } else if (stop.stopName.contains('Samaypur Badli') ||
-                 stop.stopName.contains('HUDA City Centre') ||
-                 stop.stopName.contains('Qutab Minar') ||
-                 stop.stopName.contains('Hauz Khas') ||
-                 stop.stopName.contains('AIIMS') ||
-                 stop.stopName.contains('Rajiv Chowk') ||
-                 stop.stopName.contains('New Delhi') ||
-                 stop.stopName.contains('Chandni Chowk') ||
-                 stop.stopName.contains('Civil Lines') ||
-                 stop.stopName.contains('Vishwavidyalaya') ||
-                 stop.stopName.contains('Azadpur')) {
+      } else if (routeLongName.startsWith('YELLOW_')) {
         lineName = 'Yellow Line';
         lineColor = '#FFD700';
-      } else if (stop.stopName.contains('Brigadier Hoshiyar Singh') ||
-                 stop.stopName.contains('Kirti Nagar')) {
+      } else if (routeLongName.startsWith('BLUE_')) {
+        lineName = 'Blue Line';
+        lineColor = '#0066CC';
+      } else if (routeLongName.startsWith('GREEN_')) {
         lineName = 'Green Line';
         lineColor = '#00AA00';
-      } else if (stop.stopName.contains('Raja Nahar Singh') ||
-                 stop.stopName.contains('Badarpur')) {
+      } else if (routeLongName.startsWith('VIOLET_')) {
         lineName = 'Violet Line';
         lineColor = '#800080';
-      } else if (stop.stopName.contains('Shiv Vihar') ||
-                 stop.stopName.contains('Majlis Park')) {
+      } else if (routeLongName.startsWith('PINK_')) {
         lineName = 'Pink Line';
         lineColor = '#FF69B4';
-      } else if (stop.stopName.contains('Janak Puri West') ||
-                 stop.stopName.contains('Botanical Garden')) {
+      } else if (routeLongName.startsWith('MAGENTA_')) {
         lineName = 'Magenta Line';
         lineColor = '#FF00FF';
-      } else if (stop.stopName.contains('Dhansa') ||
-                 stop.stopName.contains('Najafgarh')) {
+      } else if (routeLongName.startsWith('GRAY_')) {
         lineName = 'Gray Line';
         lineColor = '#808080';
-      } else if (stop.stopName.contains('Depot Station') ||
-                 stop.stopName.contains('Noida Sector 142')) {
+      } else if (routeLongName.startsWith('AQUA_')) {
         lineName = 'Aqua Line';
         lineColor = '#00FFFF';
-      } else if (stop.stopName.contains('IGI Airport') ||
-                 stop.stopName.contains('Delhi Aerocity')) {
+      } else if (routeLongName.startsWith('ORANGE/AIRPORT_') || routeLongName.startsWith('ORANGE_') || routeLongName.contains('AIRPORT_')) {
         lineName = 'Airport Express';
         lineColor = '#FF8C00';
-      } else if (stop.stopName.contains('Rapid') ||
-                 stop.stopName.contains('Phase')) {
+      } else if (routeLongName.startsWith('RAPID_')) {
         lineName = 'Rapid Metro';
         lineColor = '#FF1493';
+      }
+      
+      routeToLineMap[route.routeId] = {
+        'lineName': lineName,
+        'lineColor': lineColor,
+      };
+    }
+    
+    // Create mapping: trip_id -> route_id
+    final tripToRouteMap = <String, String>{};
+    for (final trip in trips) {
+      tripToRouteMap[trip.tripId] = trip.routeId;
+    }
+    
+    // Create mapping: stop_id -> line info (using stop_times to link stops to trips to routes)
+    // For stations on multiple lines (interchanges), use the most common line
+    final stopLineCounts = <String, Map<String, int>>{}; // stopId -> lineName -> count
+    for (final stopTime in stopTimes) {
+      final tripId = stopTime.tripId;
+      final stopId = stopTime.stopId;
+      
+      // Get route_id from trip_id
+      final routeId = tripToRouteMap[tripId];
+      if (routeId == null) continue;
+      
+      // Get line info from route_id
+      final lineInfo = routeToLineMap[routeId];
+      if (lineInfo == null) continue;
+      
+      final lineName = lineInfo['lineName']!;
+      
+      // Count occurrences of each line for this stop
+      if (!stopLineCounts.containsKey(stopId)) {
+        stopLineCounts[stopId] = {};
+      }
+      stopLineCounts[stopId]![lineName] = (stopLineCounts[stopId]![lineName] ?? 0) + 1;
+    }
+    
+    // Determine the primary line for each stop (most common)
+    final stopToLineMap = <String, Map<String, String>>{};
+    for (final entry in stopLineCounts.entries) {
+      final stopId = entry.key;
+      final lineCounts = entry.value;
+      
+      // Find the line with the highest count
+      String mostCommonLine = 'Unknown Line';
+      int maxCount = 0;
+      for (final lineEntry in lineCounts.entries) {
+        if (lineEntry.value > maxCount) {
+          maxCount = lineEntry.value;
+          mostCommonLine = lineEntry.key;
+        }
+      }
+      
+      // Get the color for the most common line
+      final lineColor = _getLineColorFromLineName(mostCommonLine);
+      
+      stopToLineMap[stopId] = {
+        'lineName': mostCommonLine,
+        'lineColor': lineColor,
+      };
+    }
+    
+    print('GTFS: Mapped ${stopToLineMap.length} stops to lines based on route data');
+    
+    _metroStations = stops.map((stop) {
+      // Get line info from route-based mapping
+      final lineInfo = stopToLineMap[stop.stopId];
+      String lineName = lineInfo?['lineName'] ?? 'Unknown Line';
+      String lineColor = lineInfo?['lineColor'] ?? '#1976D2';
+      
+      // Fallback to route-based detection if mapping not found
+      if (lineName == 'Unknown Line') {
+        // Try to find a route that serves this stop
+        for (final stopTime in stopTimes.where((st) => st.stopId == stop.stopId)) {
+          final routeId = tripToRouteMap[stopTime.tripId];
+          if (routeId != null) {
+            final routeLineInfo = routeToLineMap[routeId];
+            if (routeLineInfo != null) {
+              lineName = routeLineInfo['lineName']!;
+              lineColor = routeLineInfo['lineColor']!;
+              break;
+            }
+          }
+        }
       }
 
       // Determine if it's an interchange station
@@ -448,6 +467,36 @@ class GTFSDataParser {
     await _convertToMetroLines();
   }
 
+  /// Get line color from line name
+  static String _getLineColorFromLineName(String lineName) {
+    switch (lineName) {
+      case 'Red Line':
+        return '#CC0000';
+      case 'Yellow Line':
+        return '#FFD700';
+      case 'Blue Line':
+        return '#0066CC';
+      case 'Green Line':
+        return '#00AA00';
+      case 'Violet Line':
+        return '#800080';
+      case 'Pink Line':
+        return '#FF69B4';
+      case 'Magenta Line':
+        return '#FF00FF';
+      case 'Gray Line':
+        return '#808080';
+      case 'Aqua Line':
+        return '#00FFFF';
+      case 'Airport Express':
+        return '#FF8C00';
+      case 'Rapid Metro':
+        return '#FF1493';
+      default:
+        return '#1976D2';
+    }
+  }
+
   /// Get station facilities based on GTFS data
   static List<String> _getStationFacilities(GTFSStop stop) {
     final facilities = <String>[];
@@ -530,7 +579,7 @@ class GTFSDataParser {
     return _stopTimes ?? [];
   }
 
-  /// Clear all cached data
+  /// Clear all cached data - call this if you want to reload with updated route data
   static void clearCache() {
     _agencies = null;
     _stops = null;
@@ -539,5 +588,6 @@ class GTFSDataParser {
     _stopTimes = null;
     _metroStations = null;
     _metroLines = null;
+    print('GTFSDataParser: Cache cleared');
   }
 }

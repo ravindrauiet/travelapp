@@ -597,6 +597,114 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.orange),
             ],
           ),
+          // Show all intermediate stations
+          if (segment.intermediateStations.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.list,
+                        size: 12,
+                        color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'All Stations (${segment.stationsCount}):',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Show: From → Intermediate stations → To
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      // From station
+                      _buildStationChip(segment.fromStation, true, false, segment.lineColor),
+                      // Arrow
+                      const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      // Intermediate stations
+                      ...segment.intermediateStations.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final stationName = entry.value;
+                        final isLast = index == segment.intermediateStations.length - 1;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildStationChip(stationName, false, false, segment.lineColor),
+                            if (!isLast)
+                              const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        );
+                      }).toList(),
+                      // Arrow before last
+                      if (segment.intermediateStations.isNotEmpty)
+                        const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      // To station
+                      _buildStationChip(segment.toStation, false, true, segment.lineColor),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStationChip(String stationName, bool isStart, bool isEnd, String lineColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isStart || isEnd 
+            ? Color(int.parse(lineColor.replaceFirst('#', '0xFF'))).withOpacity(0.15)
+            : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isStart || isEnd
+              ? Color(int.parse(lineColor.replaceFirst('#', '0xFF'))).withOpacity(0.5)
+              : Colors.grey.withOpacity(0.3),
+          width: isStart || isEnd ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isStart)
+            const Icon(Icons.play_arrow, size: 10, color: Colors.green),
+          if (isEnd)
+            const Icon(Icons.flag, size: 10, color: Colors.red),
+          const SizedBox(width: 2),
+          Flexible(
+            child: Text(
+              stationName,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isStart || isEnd ? FontWeight.w600 : FontWeight.normal,
+                color: isStart || isEnd 
+                    ? Color(int.parse(lineColor.replaceFirst('#', '0xFF')))
+                    : Colors.black87,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

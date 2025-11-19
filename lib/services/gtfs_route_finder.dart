@@ -71,8 +71,8 @@ class GTFSRouteFinder {
       }
       
       // Parse stop_times to get station sequences
-      final lineSequences = <String, List<StationSequence>>{};
-      final processedTrips = <String>{};
+      // Group by trip_id first, then extract complete sequences per route/line
+      final tripStations = <String, List<Map<String, dynamic>>>{}; // tripId -> list of {stopId, sequence, routeId}
       
       for (int i = 1; i < stopTimesLines.length; i++) {
         final stopTimeParts = _parseCsvLine(stopTimesLines[i]);
@@ -81,44 +81,105 @@ class GTFSRouteFinder {
           final stopId = stopTimeParts[3];
           final sequence = int.tryParse(stopTimeParts[4]) ?? 0;
           
-          // Skip if we've already processed this trip
-          if (processedTrips.contains(tripId)) continue;
-          
           final routeId = tripMap[tripId];
           if (routeId == null || !routeMap.containsKey(routeId)) continue;
           
-          final routeName = routeMap[routeId]!['name']!;
-          final stopInfo = stopsMap[stopId];
-          if (stopInfo == null) continue;
-          
-          // Get line name from route name
-          final lineName = _getLineNameFromRoute(routeName);
-          
-          if (!lineSequences.containsKey(lineName)) {
-            lineSequences[lineName] = [];
+          if (!tripStations.containsKey(tripId)) {
+            tripStations[tripId] = [];
           }
           
-          lineSequences[lineName]!.add(StationSequence(
-            stationId: stopId,
-            stationName: stopInfo['name']!,
-            latitude: double.tryParse(stopInfo['lat']!) ?? 0.0,
-            longitude: double.tryParse(stopInfo['lon']!) ?? 0.0,
-            sequence: sequence,
-            lineName: lineName,
-          ));
-          
-          processedTrips.add(tripId);
+          tripStations[tripId]!.add({
+            'stopId': stopId,
+            'sequence': sequence,
+            'routeId': routeId,
+          });
         }
       }
       
-      // Sort stations by sequence for each line
-      for (final lineName in lineSequences.keys) {
-        lineSequences[lineName]!.sort((a, b) => a.sequence.compareTo(b.sequence));
-        print('GTFSRouteFinder: Line $lineName has ${lineSequences[lineName]!.length} stations');
+      // Now process trips to build line sequences
+      final lineSequences = <String, Map<String, StationSequence>>{}; // lineName -> {stationId -> StationSequence}
+      
+      for (final tripEntry in tripStations.entries) {
+        final tripId = tripEntry.key;
+        final stationsInTrip = tripEntry.value;
+        
+        // Sort by sequence for this trip
+        stationsInTrip.sort((a, b) => (a['sequence'] as int).compareTo(b['sequence'] as int));
+        
+        // Get route info from first station
+        if (stationsInTrip.isEmpty) continue;
+        final routeId = stationsInTrip[0]['routeId'] as String;
+        if (!routeMap.containsKey(routeId)) continue;
+        
+        final routeName = routeMap[routeId]!['name']!;
+        final lineName = _getLineNameFromRoute(routeName);
+        
+        if (!lineSequences.containsKey(lineName)) {
+          lineSequences[lineName] = {};
+        }
+        
+        // Add all stations from this trip to the line sequence
+        // Store by stopId - if station appears in multiple trips, keep the one with minimum sequence
+        for (final stationData in stationsInTrip) {
+          final stopId = stationData['stopId'] as String;
+          final sequence = stationData['sequence'] as int;
+          
+          final stopInfo = stopsMap[stopId];
+          if (stopInfo == null) continue;
+          
+          // Store by stopId - keep minimum sequence if duplicate
+          if (!lineSequences[lineName]!.containsKey(stopId)) {
+            lineSequences[lineName]![stopId] = StationSequence(
+              stationId: stopId,
+              stationName: stopInfo['name']!,
+              latitude: double.tryParse(stopInfo['lat']!) ?? 0.0,
+              longitude: double.tryParse(stopInfo['lon']!) ?? 0.0,
+              sequence: sequence,
+              lineName: lineName,
+            );
+          } else {
+            // If already exists, update sequence to minimum (earliest in route)
+            final existing = lineSequences[lineName]![stopId]!;
+            if (sequence < existing.sequence) {
+              lineSequences[lineName]![stopId] = StationSequence(
+                stationId: stopId,
+                stationName: stopInfo['name']!,
+                latitude: double.tryParse(stopInfo['lat']!) ?? 0.0,
+                longitude: double.tryParse(stopInfo['lon']!) ?? 0.0,
+                sequence: sequence,
+                lineName: lineName,
+              );
+            }
+          }
+        }
       }
       
-      _lineSequences = lineSequences;
-      print('GTFSRouteFinder: Successfully loaded sequences for ${lineSequences.length} lines');
+      // Convert to lists and sort by sequence for each line
+      // Remove duplicates (same stopId) and keep only unique stations sorted by sequence
+      final finalLineSequences = <String, List<StationSequence>>{};
+      for (final lineName in lineSequences.keys) {
+        final stationMap = <String, StationSequence>{}; // stopId -> StationSequence
+        final allStations = lineSequences[lineName]!.values;
+        
+        // All stations are already deduplicated by stopId, just convert to list
+        for (final station in allStations) {
+          stationMap[station.stationId] = station;
+        }
+        
+        final stations = stationMap.values.toList();
+        stations.sort((a, b) => a.sequence.compareTo(b.sequence));
+        finalLineSequences[lineName] = stations;
+        print('GTFSRouteFinder: Line $lineName has ${stations.length} unique stations');
+        
+        // Debug: print first few and last few stations
+        if (stations.isNotEmpty) {
+          print('GTFSRouteFinder: Line $lineName first stations: ${stations.take(5).map((s) => '${s.stationName}(${s.sequence})').join(', ')}');
+          print('GTFSRouteFinder: Line $lineName last stations: ${stations.reversed.take(5).map((s) => '${s.stationName}(${s.sequence})').join(', ')}');
+        }
+      }
+      
+      _lineSequences = finalLineSequences;
+      print('GTFSRouteFinder: Successfully loaded sequences for ${finalLineSequences.length} lines');
       
     } catch (e) {
       print('GTFSRouteFinder: Error loading sequences: $e');
@@ -251,22 +312,37 @@ class GTFSRouteFinder {
       );
     }
     
+    print('GTFSRouteFinder: Found fromSeq: ${fromSeq.stationName} at sequence ${fromSeq.sequence}');
+    print('GTFSRouteFinder: Found toSeq: ${toSeq.stationName} at sequence ${toSeq.sequence}');
+    print('GTFSRouteFinder: Total stations in sequence: ${sequences.length}');
+    
     // Get stations between from and to
     final startIndex = fromSeq.sequence;
     final endIndex = toSeq.sequence;
     final isReverse = startIndex > endIndex;
     
+    print('GTFSRouteFinder: Getting stations from index $startIndex to $endIndex (reverse: $isReverse)');
+    
+    // Filter stations by sequence range instead of looking for exact matches
     final routeStations = <StationSequence>[];
     if (isReverse) {
-      for (int i = startIndex; i >= endIndex; i--) {
-        final station = sequences.firstWhere((s) => s.sequence == i, orElse: () => throw Exception('Station not found at sequence $i'));
-        routeStations.add(station);
-      }
+      // Get all stations with sequence between endIndex and startIndex (inclusive), sorted descending
+      routeStations.addAll(
+        sequences.where((s) => s.sequence >= endIndex && s.sequence <= startIndex)
+      );
+      routeStations.sort((a, b) => b.sequence.compareTo(a.sequence)); // Descending
     } else {
-      for (int i = startIndex; i <= endIndex; i++) {
-        final station = sequences.firstWhere((s) => s.sequence == i, orElse: () => throw Exception('Station not found at sequence $i'));
-        routeStations.add(station);
-      }
+      // Get all stations with sequence between startIndex and endIndex (inclusive), sorted ascending
+      routeStations.addAll(
+        sequences.where((s) => s.sequence >= startIndex && s.sequence <= endIndex)
+      );
+      routeStations.sort((a, b) => a.sequence.compareTo(b.sequence)); // Ascending
+    }
+    
+    print('GTFSRouteFinder: Collected ${routeStations.length} stations in route');
+    if (routeStations.length <= 3) {
+      print('GTFSRouteFinder: WARNING - Only ${routeStations.length} stations found! This seems wrong.');
+      print('GTFSRouteFinder: Station names: ${routeStations.map((s) => s.stationName).join(' → ')}');
     }
     
     // Calculate total distance and time
@@ -292,39 +368,30 @@ class GTFSRouteFinder {
       isAirportExpress: lineName == 'Airport Express',
     );
     
-    // Create route segments
-    final segments = <RouteSegment>[];
-    for (int i = 0; i < routeStations.length - 1; i++) {
-      final current = routeStations[i];
-      final next = routeStations[i + 1];
-      
-      final distance = AccurateFareCalculator.calculateDistance(
-        current.latitude, current.longitude,
-        next.latitude, next.longitude,
-      );
-      
-      final segmentFare = AccurateFareCalculator.calculateFareComparison(
-        distance: distance,
-        travelTime: travelTime,
-        isAirportExpress: lineName == 'Airport Express',
-      );
-      
-      segments.add(RouteSegment(
-        line: lineName,
-        lineColor: _getLineColor(lineName),
-        fromStation: current.stationName,
-        toStation: next.stationName,
-        stationsCount: 1,
-        timeMinutes: _getLineTravelTime(lineName, distance),
-        fare: (isSmartCard ? segmentFare.smartCardFare : segmentFare.ticketFare).toDouble(),
-      ));
-    }
+    // Create a single route segment with all intermediate stations
+    final allStationNames = routeStations.map((s) => s.stationName).toList();
+    
+    // Exclude the first and last station from intermediate list (they're shown as from/to)
+    final intermediateStations = routeStations.length > 2 
+        ? allStationNames.sublist(1, allStationNames.length - 1)
+        : <String>[];
+    
+    final segment = RouteSegment(
+      line: lineName,
+      lineColor: _getLineColor(lineName),
+      fromStation: from.name,
+      toStation: to.name,
+      stationsCount: routeStations.length,
+      timeMinutes: totalTime,
+      fare: (isSmartCard ? fareResult.smartCardFare : fareResult.ticketFare).toDouble(),
+      intermediateStations: intermediateStations,
+    );
     
     final route = MetroRoute(
       id: 'direct_${from.id}_${to.id}',
       fromStation: from.name,
       toStation: to.name,
-      segments: segments,
+      segments: [segment],
       totalTime: totalTime,
       totalFare: (isSmartCard ? fareResult.smartCardFare : fareResult.ticketFare).toDouble(),
       totalStations: routeStations.length,
@@ -344,8 +411,6 @@ class GTFSRouteFinder {
     DateTime travelTime,
     bool isSmartCard,
   ) {
-    // For now, return a simple route with one interchange
-    // This can be enhanced with proper interchange detection
     print('GTFSRouteFinder: Finding route with interchanges from ${from.line} to ${to.line}');
     
     // Find common interchange stations
@@ -372,55 +437,80 @@ class GTFSRouteFinder {
     final interchange = interchangeStations.first;
     print('GTFSRouteFinder: Using interchange station: ${interchange.name}');
     
-    // Create route with interchange
+    // Get station sequences for both segments
     final segments = <RouteSegment>[];
     
-    // First segment: from station to interchange
-    final firstDistance = AccurateFareCalculator.calculateDistance(
-      from.latitude, from.longitude,
-      interchange.latitude, interchange.longitude,
-    );
+    // First segment: from station to interchange on from.line
+    final firstSegmentStations = _getStationSequenceBetween(from, interchange, from.line);
+    if (firstSegmentStations.isNotEmpty) {
+      final firstStationNames = firstSegmentStations.map((s) => s.stationName).toList();
+      final firstIntermediate = firstStationNames.length > 2 
+          ? firstStationNames.sublist(1, firstStationNames.length - 1)
+          : <String>[];
+      
+      double firstDistance = 0.0;
+      for (int i = 0; i < firstSegmentStations.length - 1; i++) {
+        firstDistance += AccurateFareCalculator.calculateDistance(
+          firstSegmentStations[i].latitude, firstSegmentStations[i].longitude,
+          firstSegmentStations[i + 1].latitude, firstSegmentStations[i + 1].longitude,
+        );
+      }
+      
+      final firstFare = AccurateFareCalculator.calculateFareComparison(
+        distance: firstDistance,
+        travelTime: travelTime,
+        isAirportExpress: from.line == 'Airport Express',
+      );
+      
+      segments.add(RouteSegment(
+        line: from.line,
+        lineColor: _getLineColor(from.line),
+        fromStation: from.name,
+        toStation: interchange.name,
+        stationsCount: firstSegmentStations.length,
+        timeMinutes: _getLineTravelTime(from.line, firstDistance).round(),
+        fare: (isSmartCard ? firstFare.smartCardFare : firstFare.ticketFare).toDouble(),
+        intermediateStations: firstIntermediate,
+      ));
+    }
     
-    final firstFare = AccurateFareCalculator.calculateFareComparison(
-      distance: firstDistance,
-      travelTime: travelTime,
-      isAirportExpress: from.line == 'Airport Express',
-    );
-    
-    segments.add(RouteSegment(
-      line: from.line,
-      lineColor: _getLineColor(from.line),
-      fromStation: from.name,
-      toStation: interchange.name,
-      stationsCount: 1,
-      timeMinutes: _getLineTravelTime(from.line, firstDistance),
-      fare: (isSmartCard ? firstFare.smartCardFare : firstFare.ticketFare).toDouble(),
-    ));
-    
-    // Second segment: interchange to destination
-    final secondDistance = AccurateFareCalculator.calculateDistance(
-      interchange.latitude, interchange.longitude,
-      to.latitude, to.longitude,
-    );
-    
-    final secondFare = AccurateFareCalculator.calculateFareComparison(
-      distance: secondDistance,
-      travelTime: travelTime,
-      isAirportExpress: to.line == 'Airport Express',
-    );
-    
-    segments.add(RouteSegment(
-      line: to.line,
-      lineColor: _getLineColor(to.line),
-      fromStation: interchange.name,
-      toStation: to.name,
-      stationsCount: 1,
-      timeMinutes: _getLineTravelTime(to.line, secondDistance),
-      fare: (isSmartCard ? secondFare.smartCardFare : secondFare.ticketFare).toDouble(),
-    ));
+    // Second segment: interchange to destination on to.line
+    final secondSegmentStations = _getStationSequenceBetween(interchange, to, to.line);
+    if (secondSegmentStations.isNotEmpty) {
+      final secondStationNames = secondSegmentStations.map((s) => s.stationName).toList();
+      final secondIntermediate = secondStationNames.length > 2 
+          ? secondStationNames.sublist(1, secondStationNames.length - 1)
+          : <String>[];
+      
+      double secondDistance = 0.0;
+      for (int i = 0; i < secondSegmentStations.length - 1; i++) {
+        secondDistance += AccurateFareCalculator.calculateDistance(
+          secondSegmentStations[i].latitude, secondSegmentStations[i].longitude,
+          secondSegmentStations[i + 1].latitude, secondSegmentStations[i + 1].longitude,
+        );
+      }
+      
+      final secondFare = AccurateFareCalculator.calculateFareComparison(
+        distance: secondDistance,
+        travelTime: travelTime,
+        isAirportExpress: to.line == 'Airport Express',
+      );
+      
+      segments.add(RouteSegment(
+        line: to.line,
+        lineColor: _getLineColor(to.line),
+        fromStation: interchange.name,
+        toStation: to.name,
+        stationsCount: secondSegmentStations.length,
+        timeMinutes: _getLineTravelTime(to.line, secondDistance).round(),
+        fare: (isSmartCard ? secondFare.smartCardFare : secondFare.ticketFare).toDouble(),
+        intermediateStations: secondIntermediate,
+      ));
+    }
     
     final totalTime = segments.fold(0, (sum, segment) => sum + segment.timeMinutes) + 5; // Add 5 minutes for interchange
     final totalFare = segments.fold(0.0, (sum, segment) => sum + segment.fare);
+    final totalStations = segments.fold(0, (sum, segment) => sum + segment.stationsCount) - segments.length; // Subtract duplicates at interchanges
     
     final route = MetroRoute(
       id: 'interchange_${from.id}_${to.id}',
@@ -429,11 +519,71 @@ class GTFSRouteFinder {
       segments: segments,
       totalTime: totalTime,
       totalFare: totalFare,
-      totalStations: 3,
+      totalStations: totalStations,
       interchangeStations: [interchange.name],
     );
     
     return [route];
+  }
+  
+  /// Get station sequence between two stations on the same line
+  static List<StationSequence> _getStationSequenceBetween(
+    MetroStation from,
+    MetroStation to,
+    String lineName,
+  ) {
+    final sequences = _lineSequences![lineName];
+    if (sequences == null || sequences.isEmpty) {
+      return [];
+    }
+    
+    // Find stations in sequence
+    StationSequence? fromSeq = sequences.firstWhere(
+      (s) => s.stationName.toLowerCase() == from.name.toLowerCase() ||
+             s.stationName.toLowerCase().contains(from.name.toLowerCase()) ||
+             from.name.toLowerCase().contains(s.stationName.toLowerCase()),
+      orElse: () => StationSequence(stationId: '', stationName: '', latitude: 0, longitude: 0, sequence: 0, lineName: ''),
+    );
+    
+    StationSequence? toSeq = sequences.firstWhere(
+      (s) => s.stationName.toLowerCase() == to.name.toLowerCase() ||
+             s.stationName.toLowerCase().contains(to.name.toLowerCase()) ||
+             to.name.toLowerCase().contains(s.stationName.toLowerCase()),
+      orElse: () => StationSequence(stationId: '', stationName: '', latitude: 0, longitude: 0, sequence: 0, lineName: ''),
+    );
+    
+    if (fromSeq.stationName.isEmpty || toSeq.stationName.isEmpty) {
+      return [];
+    }
+    
+    final startIndex = fromSeq.sequence;
+    final endIndex = toSeq.sequence;
+    final isReverse = startIndex > endIndex;
+    
+    final routeStations = <StationSequence>[];
+    if (isReverse) {
+      for (int i = startIndex; i >= endIndex; i--) {
+        final station = sequences.firstWhere(
+          (s) => s.sequence == i,
+          orElse: () => StationSequence(stationId: '', stationName: '', latitude: 0, longitude: 0, sequence: 0, lineName: ''),
+        );
+        if (station.stationName.isNotEmpty) {
+          routeStations.add(station);
+        }
+      }
+    } else {
+      for (int i = startIndex; i <= endIndex; i++) {
+        final station = sequences.firstWhere(
+          (s) => s.sequence == i,
+          orElse: () => StationSequence(stationId: '', stationName: '', latitude: 0, longitude: 0, sequence: 0, lineName: ''),
+        );
+        if (station.stationName.isNotEmpty) {
+          routeStations.add(station);
+        }
+      }
+    }
+    
+    return routeStations;
   }
 
   /// Fallback simple route finder
