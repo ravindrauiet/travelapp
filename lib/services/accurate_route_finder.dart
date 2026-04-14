@@ -292,6 +292,13 @@ class AccurateRouteFinder {
     final toStation = stations.last;
     final stationsCount = stations.length;
     
+    // Extract intermediate stations (excluding first and last)
+    final intermediateStations = stations
+        .skip(1)
+        .take(stations.length - 2)
+        .map((s) => s.name)
+        .toList();
+    
     // Calculate distance
     final distance = AccurateFareCalculator.calculateDistance(
       fromStation.latitude, fromStation.longitude,
@@ -317,6 +324,7 @@ class AccurateRouteFinder {
       stationsCount: stationsCount,
       timeMinutes: timeMinutes.round(),
       fare: fareResult.finalFare.toDouble(),
+      intermediateStations: intermediateStations,
     );
   }
 

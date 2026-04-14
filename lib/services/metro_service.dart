@@ -1,69 +1,55 @@
 import 'dart:math';
 import '../models/metro_station.dart';
 import '../models/metro_route.dart';
-import 'gtfs_data_parser.dart';
 import 'metro_data_parser.dart';
-import 'simple_gtfs_parser.dart';
-import 'working_gtfs_parser.dart';
 import 'complete_gtfs_parser.dart';
 import 'accurate_fare_calculator.dart';
 import 'accurate_route_finder.dart';
 import 'gtfs_route_finder.dart';
 import 'improved_route_finder.dart';
+import 'gtfs_graph_service.dart';
 
 class MetroService {
   // Use GTFS data instead of hardcoded stations
   static List<MetroStation>? _stations;
 
   Future<List<MetroStation>> getStations() async {
-    // Load accurate GTFS data if not already loaded
-    if (_stations == null) {
-      print('MetroService: Starting to load stations...');
-      
-      try {
-        // Try to load from complete GTFS data first
-        print('MetroService: Attempting to load complete GTFS data...');
-        _stations = await CompleteGTFSParser.getAllStations();
-        if (_stations != null && _stations!.isNotEmpty) {
-          print('MetroService: Successfully loaded ${_stations!.length} stations from complete GTFS data');
-          return _stations!;
-        } else {
-          print('MetroService: Complete GTFS data returned empty or null');
-        }
-      } catch (e) {
-        print('MetroService: Complete GTFS data loading failed: $e');
+    if (_stations != null) return _stations!;
+
+    print('MetroService: Loading stations via GTFSGraphService…');
+    try {
+      _stations = await GTFSGraphService.getStations();
+      if (_stations != null && _stations!.isNotEmpty) {
+        print('MetroService: ${_stations!.length} stations loaded from GTFSGraphService');
+        return _stations!;
       }
-      
-      try {
-        // Try to load from complex GTFS data
-        print('MetroService: Attempting to load complex GTFS data...');
-        _stations = await GTFSDataParser.getMetroStations();
-        if (_stations != null && _stations!.isNotEmpty) {
-          print('MetroService: Successfully loaded ${_stations!.length} stations from complex GTFS data');
-          return _stations!;
-        } else {
-          print('MetroService: Complex GTFS data returned empty or null');
-        }
-      } catch (e) {
-        print('MetroService: Complex GTFS data loading failed: $e');
-      }
-      
-      // Fallback to JSON data if GTFS fails
-      try {
-        print('MetroService: Falling back to JSON data...');
-        _stations = await MetroDataParser.getAllStations();
-        if (_stations != null && _stations!.isNotEmpty) {
-          print('MetroService: Successfully loaded ${_stations!.length} stations from JSON data (fallback)');
-          return _stations!;
-        } else {
-          print('MetroService: JSON data also returned empty or null');
-        }
-      } catch (e) {
-        print('MetroService: JSON data loading also failed: $e');
-      }
+    } catch (e) {
+      print('MetroService: GTFSGraphService station load failed: $e');
     }
-    
-    print('MetroService: Returning ${_stations?.length ?? 0} stations');
+
+    // Fallback 1: CompleteGTFSParser
+    try {
+      _stations = await CompleteGTFSParser.getAllStations();
+      if (_stations != null && _stations!.isNotEmpty) {
+        print('MetroService: ${_stations!.length} stations loaded from CompleteGTFSParser');
+        return _stations!;
+      }
+    } catch (e) {
+      print('MetroService: CompleteGTFSParser failed: $e');
+    }
+
+    // Fallback 2: JSON data
+    try {
+      _stations = await MetroDataParser.getAllStations();
+      if (_stations != null && _stations!.isNotEmpty) {
+        print('MetroService: ${_stations!.length} stations loaded from MetroDataParser');
+        return _stations!;
+      }
+    } catch (e) {
+      print('MetroService: MetroDataParser failed: $e');
+    }
+
+    print('MetroService: No station data available');
     return _stations ?? [];
   }
 
@@ -102,71 +88,66 @@ class MetroService {
     ];
   }
 
-  /// Find optimal route between two stations using accurate algorithms
+  /// Find optimal route between two stations.
+  /// Primary: GTFSGraphService (correct graph + Dijkstra, total-distance fare).
+  /// Fallback: ImprovedRouteFinder → GTFSRouteFinder → AccurateRouteFinder.
   Future<List<MetroRoute>> findRoute(String fromStation, String toStation) async {
-    if (_stations == null) {
-      await getStations(); // This will load stations with fallback
+    print('MetroService: finding route $fromStation → $toStation');
+
+    // ── Primary: new correct graph-based finder ─────────────────────────────
+    try {
+      final routes = await GTFSGraphService.findRoute(
+        fromName:   fromStation,
+        toName:     toStation,
+        travelTime: DateTime.now(),
+        isSmartCard: true,
+      );
+      if (routes.isNotEmpty) {
+        print('MetroService: GTFSGraphService returned ${routes.length} route(s)');
+        return routes;
+      }
+    } catch (e) {
+      print('MetroService: GTFSGraphService failed: $e');
     }
-    
-    final stations = _stations ?? [];
-    
-    print('MetroService: Finding route from $fromStation to $toStation');
-    print('MetroService: Using ${stations.length} stations');
-    
-    // Use improved route finder for better cross-line journey handling
+
+    // ── Fallback chain (legacy finders) ─────────────────────────────────────
+    final stations = await getStations();
+
     try {
       final routes = await ImprovedRouteFinder.findRoute(
         fromStationName: fromStation,
-        toStationName: toStation,
-        stations: stations,
-        travelTime: DateTime.now(),
-        isSmartCard: true, // Default to smart card for better pricing
+        toStationName:   toStation,
+        stations:        stations,
+        travelTime:      DateTime.now(),
+        isSmartCard:     true,
       );
-      
-      print('MetroService: Improved route finder returned ${routes.length} routes');
-      return routes;
+      if (routes.isNotEmpty) return routes;
     } catch (e) {
-      print('MetroService: Improved route finder failed: $e, falling back to GTFS route finder');
-      
-      // Fallback to GTFS route finder
-      try {
-        final routes = await GTFSRouteFinder.findRoute(
-          fromStationName: fromStation,
-          toStationName: toStation,
-          stations: stations,
-          travelTime: DateTime.now(),
-          isSmartCard: true,
-        );
-        
-        print('MetroService: GTFS route finder returned ${routes.length} routes');
-        return routes;
-      } catch (e2) {
-        print('MetroService: GTFS route finder also failed: $e2, falling back to accurate route finder');
-        
-        // Final fallback to accurate route finder
-        return await AccurateRouteFinder.findOptimalRoute(
-          fromStationName: fromStation,
-          toStationName: toStation,
-          stations: stations,
-          travelTime: DateTime.now(),
-          isSmartCard: true,
-        );
-      }
+      print('MetroService: ImprovedRouteFinder failed: $e');
     }
+
+    try {
+      final routes = await GTFSRouteFinder.findRoute(
+        fromStationName: fromStation,
+        toStationName:   toStation,
+        stations:        stations,
+        travelTime:      DateTime.now(),
+        isSmartCard:     true,
+      );
+      if (routes.isNotEmpty) return routes;
+    } catch (e) {
+      print('MetroService: GTFSRouteFinder failed: $e');
+    }
+
+    return AccurateRouteFinder.findOptimalRoute(
+      fromStationName: fromStation,
+      toStationName:   toStation,
+      stations:        stations,
+      travelTime:      DateTime.now(),
+      isSmartCard:     true,
+    );
   }
   
-  /// Calculate number of stations between two stations on the same line
-  int _calculateStationsBetween(MetroStation from, MetroStation to, List<MetroStation> allStations) {
-    if (from.line != to.line) return 0;
-    
-    final stationsOnLine = allStations.where((s) => s.line == from.line).toList();
-    final fromIndex = stationsOnLine.indexWhere((s) => s.id == from.id);
-    final toIndex = stationsOnLine.indexWhere((s) => s.id == to.id);
-    
-    if (fromIndex == -1 || toIndex == -1) return 0;
-    
-    return (toIndex - fromIndex).abs() + 1;
-  }
 
   /// Calculate accurate fare between two stations using official DMRC rates
   Future<Map<String, dynamic>?> calculateFare(String fromStation, String toStation) async {

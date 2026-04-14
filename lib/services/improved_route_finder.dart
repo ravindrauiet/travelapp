@@ -98,10 +98,14 @@ class ImprovedRouteFinder {
       return _createFallbackRoute(from, to, travelTime, isSmartCard);
     }
     
-    // Get stations between from and to
-    final startIndex = fromIndex < toIndex ? fromIndex : toIndex;
-    final endIndex = fromIndex < toIndex ? toIndex : fromIndex;
-    final routeStations = lineStations.sublist(startIndex, endIndex + 1);
+    // Get stations between from and to (ensure correct order)
+    List<MetroStation> routeStations;
+    if (fromIndex < toIndex) {
+      routeStations = lineStations.sublist(fromIndex, toIndex + 1);
+    } else {
+      // Reverse direction - get stations in reverse order
+      routeStations = lineStations.sublist(toIndex, fromIndex + 1).reversed.toList();
+    }
     
     // Calculate total distance and time
     double totalDistance = 0.0;
@@ -119,6 +123,13 @@ class ImprovedRouteFinder {
       totalTime += _getLineTravelTime(from.line, distance);
     }
     
+    // Create a single segment with all intermediate stations
+    final intermediateStations = routeStations
+        .skip(1)
+        .take(routeStations.length - 2)
+        .map((s) => s.name)
+        .toList();
+    
     // Calculate fare
     final fareResult = AccurateFareCalculator.calculateFareComparison(
       distance: totalDistance,
@@ -126,33 +137,18 @@ class ImprovedRouteFinder {
       isAirportExpress: from.line == 'Airport Express',
     );
     
-    // Create route segments
-    final segments = <RouteSegment>[];
-    for (int i = 0; i < routeStations.length - 1; i++) {
-      final current = routeStations[i];
-      final next = routeStations[i + 1];
-      
-      final distance = AccurateFareCalculator.calculateDistance(
-        current.latitude, current.longitude,
-        next.latitude, next.longitude,
-      );
-      
-      final segmentFare = AccurateFareCalculator.calculateFareComparison(
-        distance: distance,
-        travelTime: travelTime,
-        isAirportExpress: from.line == 'Airport Express',
-      );
-      
-      segments.add(RouteSegment(
+    final segments = <RouteSegment>[
+      RouteSegment(
         line: from.line,
         lineColor: _getLineColor(from.line),
-        fromStation: current.name,
-        toStation: next.name,
-        stationsCount: 1,
-        timeMinutes: _getLineTravelTime(from.line, distance),
-        fare: (isSmartCard ? segmentFare.smartCardFare : segmentFare.ticketFare).toDouble(),
-      ));
-    }
+        fromStation: from.name,
+        toStation: to.name,
+        stationsCount: routeStations.length,
+        timeMinutes: totalTime,
+        fare: (isSmartCard ? fareResult.smartCardFare : fareResult.ticketFare).toDouble(),
+        intermediateStations: intermediateStations,
+      ),
+    ];
     
     final route = MetroRoute(
       id: 'direct_${from.id}_${to.id}',
@@ -209,6 +205,28 @@ class ImprovedRouteFinder {
     // Create route with interchange
     final segments = <RouteSegment>[];
     
+    // Get all stations on the from line between from and interchange
+    final fromLineStations = allStations.where((s) => s.line == from.line).toList();
+    final fromIndex = fromLineStations.indexWhere((s) => s.id == from.id);
+    final interchangeFromIndex = fromLineStations.indexWhere((s) => s.id == interchange.id);
+    
+    List<String> firstIntermediateStations = [];
+    if (fromIndex != -1 && interchangeFromIndex != -1) {
+      if (fromIndex < interchangeFromIndex) {
+        firstIntermediateStations = fromLineStations
+            .sublist(fromIndex + 1, interchangeFromIndex)
+            .map((s) => s.name)
+            .toList();
+      } else {
+        // Reverse direction
+        firstIntermediateStations = fromLineStations
+            .sublist(interchangeFromIndex + 1, fromIndex)
+            .reversed
+            .map((s) => s.name)
+            .toList();
+      }
+    }
+    
     // First segment: from station to interchange
     final firstDistance = AccurateFareCalculator.calculateDistance(
       from.latitude, from.longitude,
@@ -221,15 +239,40 @@ class ImprovedRouteFinder {
       isAirportExpress: from.line == 'Airport Express',
     );
     
+    final firstSegmentStationsCount = firstIntermediateStations.length + 2; // +2 for from and interchange
+    
     segments.add(RouteSegment(
       line: from.line,
       lineColor: _getLineColor(from.line),
       fromStation: from.name,
       toStation: interchange.name,
-      stationsCount: 1,
+      stationsCount: firstSegmentStationsCount,
       timeMinutes: _getLineTravelTime(from.line, firstDistance),
       fare: (isSmartCard ? firstFare.smartCardFare : firstFare.ticketFare).toDouble(),
+      intermediateStations: firstIntermediateStations,
     ));
+    
+    // Get all stations on the to line between interchange and destination
+    final toLineStations = allStations.where((s) => s.line == to.line).toList();
+    final interchangeToIndex = toLineStations.indexWhere((s) => s.id == interchange.id);
+    final toIndex = toLineStations.indexWhere((s) => s.id == to.id);
+    
+    List<String> secondIntermediateStations = [];
+    if (interchangeToIndex != -1 && toIndex != -1) {
+      if (interchangeToIndex < toIndex) {
+        secondIntermediateStations = toLineStations
+            .sublist(interchangeToIndex + 1, toIndex)
+            .map((s) => s.name)
+            .toList();
+      } else {
+        // Reverse direction
+        secondIntermediateStations = toLineStations
+            .sublist(toIndex + 1, interchangeToIndex)
+            .reversed
+            .map((s) => s.name)
+            .toList();
+      }
+    }
     
     // Second segment: interchange to destination
     final secondDistance = AccurateFareCalculator.calculateDistance(
@@ -243,18 +286,22 @@ class ImprovedRouteFinder {
       isAirportExpress: to.line == 'Airport Express',
     );
     
+    final secondSegmentStationsCount = secondIntermediateStations.length + 2; // +2 for interchange and to
+    
     segments.add(RouteSegment(
       line: to.line,
       lineColor: _getLineColor(to.line),
       fromStation: interchange.name,
       toStation: to.name,
-      stationsCount: 1,
+      stationsCount: secondSegmentStationsCount,
       timeMinutes: _getLineTravelTime(to.line, secondDistance),
       fare: (isSmartCard ? secondFare.smartCardFare : secondFare.ticketFare).toDouble(),
+      intermediateStations: secondIntermediateStations,
     ));
     
     final totalTime = segments.fold(0, (sum, segment) => sum + segment.timeMinutes) + 5; // Add 5 minutes for interchange
     final totalFare = segments.fold(0.0, (sum, segment) => sum + segment.fare);
+    final totalStations = segments.fold(0, (sum, segment) => sum + segment.stationsCount) - 1; // -1 to avoid double counting interchange
     
     final route = MetroRoute(
       id: 'interchange_${from.id}_${to.id}',
@@ -263,7 +310,7 @@ class ImprovedRouteFinder {
       segments: segments,
       totalTime: totalTime,
       totalFare: totalFare,
-      totalStations: 3,
+      totalStations: totalStations,
       interchangeStations: [interchange.name],
     );
     

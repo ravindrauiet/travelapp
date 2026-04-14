@@ -597,74 +597,164 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.orange),
             ],
           ),
-          // Show all intermediate stations
-          if (segment.intermediateStations.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.list,
-                        size: 12,
+          // Show all stations in the route
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.train,
+                      size: 16,
+                      color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'All Stations on ${segment.line} (${segment.stationsCount} stations):',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                         color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'All Stations (${segment.stationsCount}):',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // Show: From → Intermediate stations → To
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      // From station
-                      _buildStationChip(segment.fromStation, true, false, segment.lineColor),
-                      // Arrow
-                      const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      // Intermediate stations
-                      ...segment.intermediateStations.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final stationName = entry.value;
-                        final isLast = index == segment.intermediateStations.length - 1;
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildStationChip(stationName, false, false, segment.lineColor),
-                            if (!isLast)
-                              const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        );
-                      }).toList(),
-                      // Arrow before last
-                      if (segment.intermediateStations.isNotEmpty)
-                        const Text('→', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      // To station
-                      _buildStationChip(segment.toStation, false, true, segment.lineColor),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Build complete station list: From → Intermediate → To
+                _buildCompleteStationList(segment),
+              ],
             ),
-          ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCompleteStationList(RouteSegment segment) {
+    // Build complete list: From → Intermediate → To
+    final allStations = <String>[
+      segment.fromStation,
+      ...segment.intermediateStations,
+      segment.toStation,
+    ];
+    
+    return Column(
+      children: allStations.asMap().entries.map((entry) {
+        final index = entry.key;
+        final stationName = entry.value;
+        final isFirst = index == 0;
+        final isLast = index == allStations.length - 1;
+        final isIntermediate = !isFirst && !isLast;
+        
+        return Column(
+          children: [
+            Row(
+              children: [
+                // Station number indicator
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isFirst || isLast
+                        ? Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF')))
+                        : Colors.grey.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isFirst || isLast
+                          ? Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF')))
+                          : Colors.grey.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: isFirst
+                        ? const Icon(Icons.play_arrow, size: 12, color: Colors.white)
+                        : isLast
+                            ? const Icon(Icons.flag, size: 12, color: Colors.white)
+                            : Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isFirst || isLast ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Station name
+                Expanded(
+                  child: Text(
+                    stationName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isFirst || isLast ? FontWeight.w600 : FontWeight.normal,
+                      color: isFirst || isLast
+                          ? Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF')))
+                          : Colors.black87,
+                    ),
+                  ),
+                ),
+                // Station type indicator
+                if (isFirst)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'START',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  )
+                else if (isLast)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'END',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Connector line (except for last station)
+            if (!isLast) ...[
+              const SizedBox(height: 4),
+              Container(
+                margin: const EdgeInsets.only(left: 12),
+                width: 2,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Color(int.parse(segment.lineColor.replaceFirst('#', '0xFF'))).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ],
+        );
+      }).toList(),
     );
   }
 
