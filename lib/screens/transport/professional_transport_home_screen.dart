@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/app_drawer.dart';
@@ -78,7 +77,13 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
       actions: [
         IconButton(
           icon: const Icon(Icons.search, color: Colors.black87),
-          onPressed: () {},
+          tooltip: 'Search transport',
+          onPressed: () {
+            showSearch(
+              context: context,
+              delegate: _TransportSearchDelegate(),
+            );
+          },
         ),
       ],
     );
@@ -364,31 +369,40 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
             ),
           ),
           const SizedBox(height: 12),
-          _buildServiceCard(
-            'Uber',
-            'Ride-hailing service',
-            '₹8-12 per km',
-            'Available 24/7',
-            Icons.local_taxi,
-            Colors.black,
+          GestureDetector(
+            onTap: () => _showCabOptions(context),
+            child: _buildServiceCard(
+              'Uber',
+              'Ride-hailing service',
+              '₹8-12 per km',
+              'App-based · Available 24/7',
+              Icons.local_taxi,
+              Colors.black,
+            ),
           ),
           const SizedBox(height: 8),
-          _buildServiceCard(
-            'Ola',
-            'Ride-hailing service',
-            '₹8-12 per km',
-            'Available 24/7',
-            Icons.local_taxi,
-            Colors.orange,
+          GestureDetector(
+            onTap: () => _showCabOptions(context),
+            child: _buildServiceCard(
+              'Ola',
+              'Ride-hailing service',
+              '₹8-12 per km',
+              'App-based · Available 24/7',
+              Icons.local_taxi,
+              Colors.orange,
+            ),
           ),
           const SizedBox(height: 8),
-          _buildServiceCard(
-            'Yulu',
-            'Electric bike sharing',
-            '₹2-5 per km',
-            'Select areas',
-            Icons.pedal_bike,
-            AppTheme.metroGreen,
+          GestureDetector(
+            onTap: () => _showBikeOptions(context),
+            child: _buildServiceCard(
+              'Yulu',
+              'Electric bike sharing',
+              '₹2-5 per km',
+              'Station-based · Select areas',
+              Icons.pedal_bike,
+              AppTheme.metroGreen,
+            ),
           ),
         ],
       ),
@@ -627,7 +641,7 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -639,7 +653,7 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -649,41 +663,85 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
+                Text(description,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 4),
-                Text(
-                  availability,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.blue,
-                  ),
-                ),
+                Text(availability,
+                    style: const TextStyle(fontSize: 11, color: Colors.blue)),
               ],
             ),
           ),
-          Text(
-            price,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          Text(price,
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.bold, color: color)),
         ],
+      ),
+    );
+  }
+}
+
+// ── Simple search delegate for transport screen ─────────────────────────────
+
+class _TransportSearchDelegate extends SearchDelegate<String> {
+  static const _suggestions = [
+    'Auto Rickshaw',
+    'Uber',
+    'Ola',
+    'Rapido',
+    'Yulu',
+    'Bounce',
+    'Bike Rental',
+    'Scooter Rental',
+    'Meru Cabs',
+  ];
+
+  @override
+  String get searchFieldLabel => 'Search transport type…';
+
+  @override
+  List<Widget> buildActions(BuildContext context) => [
+        IconButton(
+          icon: const Icon(Icons.clear),
+          onPressed: () => query = '',
+        ),
+      ];
+
+  @override
+  Widget buildLeading(BuildContext context) => IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => close(context, ''),
+      );
+
+  @override
+  Widget buildResults(BuildContext context) => _buildList();
+
+  @override
+  Widget buildSuggestions(BuildContext context) => _buildList();
+
+  Widget _buildList() {
+    final lower = query.toLowerCase();
+    final filtered = _suggestions
+        .where((s) => s.toLowerCase().contains(lower))
+        .toList();
+
+    if (filtered.isEmpty) {
+      return const Center(
+        child: Text('No transport found',
+            style: TextStyle(color: Colors.grey, fontSize: 16)),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: filtered.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (ctx, i) => ListTile(
+        leading: const Icon(Icons.directions_car),
+        title: Text(filtered[i]),
+        onTap: () => close(ctx, filtered[i]),
       ),
     );
   }

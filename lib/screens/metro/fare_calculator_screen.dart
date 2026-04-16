@@ -31,17 +31,10 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Metro Fare Calculator'),
+        title: const Text('Fare Calculator'),
         backgroundColor: AppTheme.metroBlue,
         foregroundColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
       ),
-      drawer: _buildDrawer(context),
       body: Consumer<MetroProvider>(
         builder: (context, metroProvider, child) {
           // Show loading state while stations are being loaded
@@ -109,23 +102,13 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Loaded ${metroProvider.stations.length} stations from data',
+                          '${metroProvider.stations.length} stations loaded',
                           style: const TextStyle(
                             color: Colors.green,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        if (metroProvider.stations.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sample stations: ${metroProvider.stations.take(3).map((s) => s.name).join(', ')}...',
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -345,108 +328,6 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.metroBlue, AppTheme.metroRed],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.train,
-                  size: 48,
-                  color: Colors.white,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Metro Fare Calculator',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Calculate metro fares',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home, color: AppTheme.primaryColor),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.train, color: AppTheme.metroBlue),
-            title: const Text('Metro Services'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calculate, color: AppTheme.metroBlue),
-            title: const Text('Fare Calculator'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/fare-calculator');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.route, color: AppTheme.metroRed),
-            title: const Text('Route Finder'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/route-finder');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.update, color: AppTheme.metroGreen),
-            title: const Text('Live Updates'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/metro/live-updates');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.directions_bus, color: AppTheme.infoColor),
-            title: const Text('Bus Services'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/bus');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.local_taxi, color: AppTheme.accentColor),
-            title: const Text('Other Transport'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/transport');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomNavigationBar(BuildContext context, int currentIndex) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
@@ -469,7 +350,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
             context.go('/transport');
             break;
           case 4:
-            context.go('/games/snake');
+            context.go('/weather');
             break;
         }
       },
@@ -491,8 +372,8 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
           label: 'Transport',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.games),
-          label: 'Games',
+          icon: Icon(Icons.wb_sunny),
+          label: 'Weather',
         ),
       ],
     );
@@ -532,29 +413,6 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
         );
       }
     }
-  }
-
-  Widget _buildFareInfo(String label, String station) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          station,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
   }
 
   Widget _buildFareRow(String distance, String fare) {

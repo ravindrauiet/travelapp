@@ -28,25 +28,39 @@ class AppScaffold extends StatelessWidget {
     this.useCustomScaffold = false,
   });
 
+  /// Root tab routes — pressing back on these shows the exit confirmation.
+  static const _rootRoutes = {
+    '/',
+    '/metro',
+    '/bus',
+    '/transport',
+    '/weather',
+  };
+
+  bool _isRootRoute(BuildContext context) {
+    try {
+      final location = GoRouterState.of(context).matchedLocation;
+      return _rootRoutes.contains(location);
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isRoot = _isRootRoute(context);
+
     if (useCustomScaffold) {
-      // For screens that have their own Scaffold (like HomeScreen)
+      // Screen manages its own Scaffold — just wrap with pop handling.
       return PopScope(
-        canPop: false,
+        // Sub-pages can pop freely; only root/tab screens are intercepted.
+        canPop: !isRoot,
         onPopInvoked: (didPop) async {
           if (didPop) return;
-          
-          // Check if we can pop (go back to previous screen)
-          if (GoRouter.of(context).canPop()) {
-            // Go back to previous screen
-            GoRouter.of(context).pop();
-          } else {
-            // Show exit confirmation dialog
-            final shouldExit = await _showExitConfirmation(context);
-            if (shouldExit && context.mounted) {
-              SystemNavigator.pop();
-            }
+          // canPop was false, so we must be a root screen. Show exit dialog.
+          final shouldExit = await _showExitConfirmation(context);
+          if (shouldExit && context.mounted) {
+            SystemNavigator.pop();
           }
         },
         child: child,
@@ -54,20 +68,13 @@ class AppScaffold extends StatelessWidget {
     }
 
     return PopScope(
-      canPop: false,
+      canPop: !isRoot,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        
-        // Check if we can pop (go back to previous screen)
-        if (GoRouter.of(context).canPop()) {
-          // Go back to previous screen
-          GoRouter.of(context).pop();
-        } else {
-          // Show exit confirmation dialog
-          final shouldExit = await _showExitConfirmation(context);
-          if (shouldExit && context.mounted) {
-            SystemNavigator.pop();
-          }
+        // canPop was false, so we must be a root screen. Show exit dialog.
+        final shouldExit = await _showExitConfirmation(context);
+        if (shouldExit && context.mounted) {
+          SystemNavigator.pop();
         }
       },
       child: Scaffold(
@@ -95,56 +102,51 @@ class AppScaffold extends StatelessWidget {
 
   Future<bool> _showExitConfirmation(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.exit_to_app, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Exit App'),
-            ],
-          ),
-          content: const Text(
-            'Are you sure you want to close Metromate?',
-            style: TextStyle(fontSize: 16),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.exit_to_app, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Exit App'),
+                ],
               ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              content: const Text(
+                'Are you sure you want to close Metromate?',
+                style: TextStyle(fontSize: 16),
               ),
-              child: const Text(
-                'Exit',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Exit',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }
 

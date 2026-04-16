@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'providers/location_provider.dart';
 import 'providers/metro_provider.dart';
 import 'providers/bus_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/notification_service.dart';
+import 'services/station_tracker_service.dart';
 import 'screens/professional_home_screen.dart';
 import 'screens/metro/professional_metro_home_screen.dart';
 import 'screens/metro/fare_calculator_screen.dart';
@@ -20,7 +21,6 @@ import 'screens/bus/route_finder_screen.dart';
 import 'screens/bus/stop_locator_screen.dart';
 import 'screens/bus/bus_map_screen.dart';
 import 'screens/bus/realtime_bus_tracker.dart';
-import 'screens/bus/api_test_screen.dart';
 import 'screens/transport/professional_transport_home_screen.dart';
 import 'screens/city/enhanced_tourist_spots_screen.dart';
 import 'screens/city/emergency_screen.dart';
@@ -31,10 +31,13 @@ import 'screens/games/game_2048_screen.dart';
 import 'screens/games/flappy_bird_screen.dart';
 import 'screens/games/memory_game_screen.dart';
 import 'screens/games/games_menu_screen.dart';
+import 'screens/metro/live_tracker_screen.dart';
 import 'utils/app_theme.dart';
 import 'widgets/app_scaffold.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   runApp(const MetromateApp());
 }
 
@@ -50,6 +53,7 @@ class MetromateApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MetroProvider()),
         ChangeNotifierProvider(create: (_) => BusProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
+        ChangeNotifierProvider(create: (_) => StationTrackerService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -91,6 +95,10 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const MetroLiveUpdatesScreen().withAppScaffold(),
     ),
     GoRoute(
+      path: '/metro/live-tracker',
+      builder: (context, state) => const LiveTrackerScreen().withAppScaffold(useCustomScaffold: true),
+    ),
+    GoRoute(
       path: '/metro/map',
       builder: (context, state) => const MetroMapScreen().withAppScaffold(),
     ),
@@ -120,10 +128,6 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/bus/realtime',
       builder: (context, state) => const RealtimeBusTracker().withAppScaffold(),
-    ),
-    GoRoute(
-      path: '/bus/api-test',
-      builder: (context, state) => const ApiTestScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/transport',
