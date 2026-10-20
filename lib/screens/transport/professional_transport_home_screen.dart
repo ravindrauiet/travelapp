@@ -17,7 +17,7 @@ class _ProfessionalTransportHomeScreenState extends State<ProfessionalTransportH
     final isTablet = ResponsiveHelper.isTablet(context);
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: _buildAppBar(),
       drawer: isTablet ? null : const AppDrawer(
         title: 'Other Transport',
@@ -746,3 +746,4 @@ class _TransportSearchDelegate extends SearchDelegate<String> {
     );
   }
 }
+

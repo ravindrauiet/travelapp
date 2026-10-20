@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/app_theme.dart';
 
@@ -19,408 +17,180 @@ class SimplePDFViewer extends StatefulWidget {
 }
 
 class _SimplePDFViewerState extends State<SimplePDFViewer> {
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPDF();
-  }
-
-  void _loadPDF() async {
+  Future<void> _openOfficialMap() async {
+    const url = 'https://www.delhimetrorail.com/network_map';
+    final uri = Uri.parse(url);
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      // Simulate loading time
-      await Future.delayed(const Duration(seconds: 1));
-      
-      setState(() {
-        _isLoading = false;
-      });
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open external browser.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        }
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _downloadPDF,
-            icon: const Icon(Icons.download),
-            tooltip: 'Download PDF',
-          ),
-          IconButton(
-            onPressed: _sharePDF,
-            icon: const Icon(Icons.share),
-            tooltip: 'Share PDF',
-          ),
-        ],
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        centerTitle: true,
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading PDF...'),
-          ],
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading PDF',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _error = null;
-                  _loadPDF();
-                });
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return _buildPDFViewer();
-  }
-
-  Widget _buildPDFViewer() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: Colors.grey[100],
-      child: Column(
-        children: [
-          // PDF Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.picture_as_pdf,
-                    color: AppTheme.primaryColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Text(
-                        'PDF Document',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: _openInNewTab,
-                  icon: const Icon(Icons.open_in_new),
-                  tooltip: 'Open in new tab',
-                ),
-              ],
-            ),
-          ),
-          
-          // PDF Content Area
-          Expanded(
-            child: Container(
+            // Hero Visual Card
+            Container(
               width: double.infinity,
-              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 8,
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                    blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: _buildPDFContent(),
-            ),
-          ),
-          
-          // PDF Controls
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildControlButton(
-                  'Download',
-                  Icons.download,
-                  _downloadPDF,
-                ),
-                _buildControlButton(
-                  'Share',
-                  Icons.share,
-                  _sharePDF,
-                ),
-                _buildControlButton(
-                  'Open in Browser',
-                  Icons.open_in_browser,
-                  _openInNewTab,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPDFContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.picture_as_pdf,
-              size: 80,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Delhi Metro Map',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Interactive metro map with all lines and stations',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Tap "Open in Browser" to view the full PDF with zoom and navigation features',
+              child: Column(
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.map_rounded, size: 40, color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Delhi Metro Network Map',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.blue[700],
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Official High-Definition schematic diagram covering all 12 operational lines, 262 stations, and major interchange junctions.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-  Widget _buildControlButton(String label, IconData icon, VoidCallback onPressed) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: AppTheme.primaryColor,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Open'),
-        ),
-      ],
-    );
-  }
-
-  void _downloadPDF() async {
-    try {
-      // Show loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Preparing download...'),
-            ],
-          ),
-        ),
-      );
-
-      // Simulate download
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Close loading dialog
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
-
-      // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Metro map download started!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
-      
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error downloading PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _sharePDF() {
-    // Show share options
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Share Metro Map',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                  // Open High-Res Map Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: _openOfficialMap,
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: const Text(
+                        'Open Interactive HD Map',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF4D2D), // Zomato / Swiggy energetic flame
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 3,
+                        shadowColor: const Color(0xFFFF4D2D).withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildShareOption('WhatsApp', Icons.message, Colors.green),
-                _buildShareOption('Email', Icons.email, Colors.blue),
-                _buildShareOption('SMS', Icons.sms, Colors.orange),
-                _buildShareOption('More', Icons.more_horiz, Colors.grey),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+            const SizedBox(height: 20),
+
+            // Key Highlights Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Network Highlights',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildHighlightRow('12 Metro Lines', 'Including Airport Express & Rapid Metro', Icons.linear_scale_rounded, const Color(0xFFF59E0B)),
+                  _buildHighlightRow('28 Interchange Stations', 'Easy seamless transfer between lines', Icons.swap_calls_rounded, const Color(0xFF10B981)),
+                  _buildHighlightRow('Airport Express Direct', 'New Delhi to IGI T3 in 19 minutes', Icons.flight_takeoff_rounded, const Color(0xFFEA580C)),
+                  _buildHighlightRow('First & Last Train', 'Generally 05:30 AM to 11:30 PM', Icons.schedule_rounded, const Color(0xFF2563EB)),
+                ],
+              ),
             ),
           ],
         ),
@@ -428,68 +198,38 @@ class _SimplePDFViewerState extends State<SimplePDFViewer> {
     );
   }
 
-  Widget _buildShareOption(String label, IconData icon, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  void _openInNewTab() async {
-    try {
-      if (kIsWeb) {
-        // For web, open the PDF in a new tab
-        final uri = Uri.parse('assets/pdf/Metro.pdf');
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      } else {
-        // For mobile, show a message that PDF viewing is not available
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('PDF viewing is available on web version only'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
+  Widget _buildHighlightRow(String title, String desc, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-          );
-        }
-        return;
-      }
-      
-      // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Opening PDF...'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            child: Icon(icon, size: 18, color: color),
           ),
-        );
-      }
-    } catch (e) {
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening PDF: $e'),
-            backgroundColor: Colors.red,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                ),
+                Text(
+                  desc,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
           ),
-        );
-      }
-    }
+        ],
+      ),
+    );
   }
 }

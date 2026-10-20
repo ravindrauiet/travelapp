@@ -14,35 +14,35 @@ class AppBottomNavigation extends StatelessWidget {
       label: 'Home',
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
-      color: Color(0xFF1976D2),
+      color: Color(0xFFFF4D2D), // Zomato / Swiggy energetic signature
       route: '/',
     ),
     _NavItem(
       label: 'Metro',
       icon: Icons.train_outlined,
       activeIcon: Icons.train_rounded,
-      color: Color(0xFF1565C0),
+      color: Color(0xFF1D4ED8),
       route: '/metro',
     ),
     _NavItem(
       label: 'Bus',
       icon: Icons.directions_bus_outlined,
       activeIcon: Icons.directions_bus_rounded,
-      color: Color(0xFF2E7D32),
+      color: Color(0xFF16A34A),
       route: '/bus',
     ),
     _NavItem(
       label: 'Transport',
       icon: Icons.local_taxi_outlined,
       activeIcon: Icons.local_taxi_rounded,
-      color: Color(0xFFE65100),
+      color: Color(0xFFEA580C),
       route: '/transport',
     ),
     _NavItem(
       label: 'Weather',
       icon: Icons.wb_sunny_outlined,
       activeIcon: Icons.wb_sunny_rounded,
-      color: Color(0xFFF57F17),
+      color: Color(0xFFF59E0B),
       route: '/weather',
     ),
   ];
@@ -50,13 +50,16 @@ class AppBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Color(0x0A0F172A),
             blurRadius: 16,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),

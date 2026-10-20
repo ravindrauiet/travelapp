@@ -23,9 +23,9 @@ class AppScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.backgroundColor,
-    this.showAppBar = true,
+    this.showAppBar = false,
     this.automaticallyImplyLeading = true,
-    this.useCustomScaffold = false,
+    this.useCustomScaffold = true,
   });
 
   /// Root tab routes — pressing back on these shows the exit confirmation.
@@ -159,9 +159,9 @@ extension AppScaffoldExtension on Widget {
     Widget? bottomNavigationBar,
     Widget? floatingActionButton,
     Color? backgroundColor,
-    bool showAppBar = true,
+    bool showAppBar = false,
     bool automaticallyImplyLeading = true,
-    bool useCustomScaffold = false,
+    bool useCustomScaffold = true,
   }) {
     return AppScaffold(
       title: title,

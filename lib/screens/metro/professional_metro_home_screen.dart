@@ -35,7 +35,7 @@ class _ProfessionalMetroHomeScreenState
     final isTablet = ResponsiveHelper.isTablet(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: _buildAppBar(context),
       drawer: isTablet
           ? null

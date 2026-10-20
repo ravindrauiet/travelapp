@@ -30,7 +30,7 @@ class _EnhancedTouristSpotsScreenState extends State<EnhancedTouristSpotsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: AppBar(
         title: const Text('Explore Delhi'),
         backgroundColor: AppTheme.metroMagenta,
@@ -970,3 +970,4 @@ class _EnhancedTouristSpotsScreenState extends State<EnhancedTouristSpotsScreen>
     }
   }
 }
+

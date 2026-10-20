@@ -4,6 +4,7 @@ import '../../providers/metro_provider.dart';
 import '../../models/metro_route.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/searchable_station_dropdown.dart';
+import '../../widgets/bottom_navigation.dart';
 import '../../services/recent_routes_service.dart';
 
 class MetroRouteFinderScreen extends StatefulWidget {
@@ -84,19 +85,27 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: AppBar(
         title: const Text(
           'Route Finder',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
         ),
-        backgroundColor: AppTheme.metroRed,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        centerTitle: true,
       ),
       body: Consumer<MetroProvider>(
         builder: (context, metroProvider, _) {
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
                 child: Column(
@@ -113,6 +122,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
           );
         },
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
@@ -120,58 +130,65 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
 
   Widget _buildInputCard(MetroProvider metroProvider) {
     return Container(
-      color: AppTheme.metroRed,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Status row
-              if (metroProvider.isLoading)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Loading ${metroProvider.stations.length} stations…',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+              const Row(
+                children: [
+                  Icon(Icons.alt_route_rounded, color: Color(0xFF2563EB), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Plan Metro Route',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
+                ],
+              ),
+              if (metroProvider.isLoading)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
                 )
-              else if (metroProvider.stations.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle, size: 14, color: Colors.green),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${metroProvider.stations.length} stations ready',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${metroProvider.stations.length} READY',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF059669),
+                    ),
                   ),
                 ),
+            ],
+          ),
+          const SizedBox(height: 18),
 
               // From field
               const Text(
@@ -212,14 +229,14 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppTheme.metroRed.withOpacity(0.4)),
+                        color: const Color(0xFFF1F5F9),
                         shape: BoxShape.circle,
-                        color: AppTheme.metroRed.withOpacity(0.05),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: const Icon(
-                        Icons.swap_vert,
-                        size: 22,
-                        color: AppTheme.metroRed,
+                        Icons.swap_vert_rounded,
+                        size: 20,
+                        color: Color(0xFF2563EB),
                       ),
                     ),
                   ),
@@ -232,7 +249,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey,
+                  color: Color(0xFF64748B),
                   letterSpacing: 1.2,
                 ),
               ),
@@ -255,22 +272,23 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
               // Search button
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: ElevatedButton.icon(
                   onPressed: _canSearch() ? _searchRoutes : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.metroRed,
+                    backgroundColor: const Color(0xFFFF4D2D), // Zomato / Swiggy signature flame
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[300],
+                    disabledBackgroundColor: const Color(0xFFCBD5E1),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 0,
+                    elevation: _canSearch() ? 4 : 0,
+                    shadowColor: const Color(0xFFFF4D2D).withValues(alpha: 0.4),
                   ),
                   icon: _isSearching
                       ? const SizedBox(
@@ -281,21 +299,19 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Icon(Icons.search, size: 20),
+                      : const Icon(Icons.search_rounded, size: 20),
                   label: Text(
-                    _isSearching ? 'Searching…' : 'Find Route',
+                    _isSearching ? 'Searching…' : 'Find Best Route',
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   // ── Recent Routes ────────────────────────────────────────────────────────────
@@ -588,15 +604,21 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
         children: [
           // Header bar
           Container(
-            color: AppTheme.metroRed,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Row(
               children: [
                 Container(
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                    color: const Color(0xFFFF4D2D),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -616,8 +638,8 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                     '${route.fromStation} → ${route.toStation}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -636,24 +658,24 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStatChip(
-                      Icons.access_time,
+                      Icons.access_time_rounded,
                       '${route.totalTime} min',
-                      AppTheme.metroRed,
+                      const Color(0xFF2563EB),
                     ),
                     _buildStatChip(
-                      Icons.currency_rupee,
-                      '${route.totalFare.toStringAsFixed(0)}',
-                      AppTheme.metroBlue,
+                      Icons.currency_rupee_rounded,
+                      '₹${route.totalFare.toStringAsFixed(0)}',
+                      const Color(0xFF10B981),
                     ),
                     _buildStatChip(
-                      Icons.train,
+                      Icons.train_rounded,
                       '${route.totalStations} stops',
-                      Colors.green,
+                      const Color(0xFF0F172A),
                     ),
                     _buildStatChip(
-                      Icons.swap_horiz,
+                      Icons.swap_horiz_rounded,
                       '${route.interchangeStations.length} change${route.interchangeStations.length == 1 ? '' : 's'}',
-                      Colors.orange,
+                      const Color(0xFFEA580C),
                     ),
                   ],
                 ),
@@ -664,23 +686,23 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: Colors.orange.withOpacity(0.3)),
+                          color: const Color(0xFFFFEDD5)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.swap_horiz,
-                            size: 16, color: Colors.orange),
+                        const Icon(Icons.swap_horiz_rounded,
+                            size: 16, color: Color(0xFFEA580C)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Change at: ${route.interchangeStations.join(' → ')}',
+                            'Change line at: ${route.interchangeStations.join(' → ')}',
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFC2410C),
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -693,9 +715,9 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 const Text(
                   'Journey Details',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -706,19 +728,20 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
 
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFDBEAFE)),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.info_outline, size: 14, color: Colors.blue),
+                      Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF2563EB)),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Smart card saves 10% on fares. Allow 5 min for interchanges.',
-                          style: TextStyle(fontSize: 11, color: Colors.blue),
+                          'Save 10%–20% on every ride using DMRC Smart Card.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../services/station_tracker_service.dart';
 import '../../providers/metro_provider.dart';
@@ -166,28 +165,28 @@ class _LiveTrackerScreenState extends State<LiveTrackerScreen>
     );
   }
 
-  // ── Pill Tab Bar ────────────────────────────────────────────────────────────
+  // ── Segmented Tab Bar ──────────────────────────────────────────────────
 
   Widget _buildPillTabBar() {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Container(
-        height: 38,
+        height: 40,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: const Color(0xFFF0F2F5),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            _PillTabItem(
+            _SegmentedTab(
               label: 'Nearby Stations',
               icon: Icons.near_me,
               selected: _selectedTab == 0,
               onTap: () => setState(() => _selectedTab = 0),
             ),
-            _PillTabItem(
+            _SegmentedTab(
               label: 'Follow Route',
               icon: Icons.route,
               selected: _selectedTab == 1,
@@ -200,15 +199,15 @@ class _LiveTrackerScreenState extends State<LiveTrackerScreen>
   }
 }
 
-// ── Pill Tab Item ─────────────────────────────────────────────────────────────
+// ── Segmented Tab Item ───────────────────────────────────────────────────
 
-class _PillTabItem extends StatelessWidget {
+class _SegmentedTab extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _PillTabItem({
+  const _SegmentedTab({
     required this.label,
     required this.icon,
     required this.selected,
@@ -220,18 +219,20 @@ class _PillTabItem extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             color: selected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 6,
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
                       offset: const Offset(0, 1),
-                    ),
+                    )
                   ]
                 : null,
           ),
@@ -241,16 +242,15 @@ class _PillTabItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 13,
-                color: selected ? AppTheme.metroBlue : Colors.grey,
+                color: selected ? AppTheme.metroBlue : Colors.grey.shade600,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? AppTheme.metroBlue : Colors.grey,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? AppTheme.metroBlue : Colors.grey.shade600,
                 ),
               ),
             ],
@@ -393,90 +393,22 @@ class _NearbyTab extends StatelessWidget {
   }
 }
 
-// ── Metro Map Widget (Real Google Map) ────────────────────────────────────────
+// ── Metro Map Widget ──────────────────────────────────────────────
 
-class _MetroMapWidget extends StatefulWidget {
+class _MetroMapWidget extends StatelessWidget {
   final StationTrackerService tracker;
   const _MetroMapWidget({required this.tracker});
 
   @override
-  State<_MetroMapWidget> createState() => _MetroMapWidgetState();
-}
-
-class _MetroMapWidgetState extends State<_MetroMapWidget> {
-  GoogleMapController? _mapController;
-
-  // Delhi center as fallback
-  static const LatLng _delhiCenter = LatLng(28.6139, 77.2090);
-
-  Set<Marker> _buildMarkers() {
-    final markers = <Marker>{};
-    for (int i = 0; i < widget.tracker.nearby.length; i++) {
-      final item = widget.tracker.nearby[i];
-      final station = item.station;
-
-      markers.add(
-        Marker(
-          markerId: MarkerId('station_${station.id}'),
-          position: LatLng(station.latitude, station.longitude),
-          infoWindow: InfoWindow(
-            title: station.name,
-            snippet: station.line,
-          ),
-          icon: item.isArrived
-              ? BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueGreen)
-              : item.isApproaching
-                  ? BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueOrange)
-                  : BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueBlue),
-        ),
-      );
-    }
-    return markers;
-  }
-
-  LatLng get _mapCenter {
-    final pos = widget.tracker.position;
-    if (pos != null) return LatLng(pos.latitude, pos.longitude);
-    if (widget.tracker.nearby.isNotEmpty) {
-      return LatLng(
-        widget.tracker.nearby.first.station.latitude,
-        widget.tracker.nearby.first.station.longitude,
-      );
-    }
-    return _delhiCenter;
-  }
-
-  @override
-  void didUpdateWidget(covariant _MetroMapWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Pan camera when GPS position changes
-    final pos = widget.tracker.position;
-    if (pos != null && _mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(pos.latitude, pos.longitude)),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final currentStation = widget.tracker.nearby.isNotEmpty
-        ? widget.tracker.nearby.first.station.name
+    final currentStation = tracker.nearby.isNotEmpty
+        ? tracker.nearby.first.station.name
         : 'Rajiv Chowk';
 
     Color lineColor;
     try {
-      lineColor = widget.tracker.nearby.isNotEmpty
-          ? Color(int.parse(widget.tracker.nearby.first.station.lineColor
+      lineColor = tracker.nearby.isNotEmpty
+          ? Color(int.parse(tracker.nearby.first.station.lineColor
               .replaceFirst('#', '0xFF')))
           : AppTheme.metroBlue;
     } catch (_) {
@@ -484,7 +416,7 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
     }
 
     return Container(
-      height: 210,
+      height: 200,
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(7),
@@ -493,34 +425,20 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // ── Real Google Map ──────────────────────────────────────────
-          GoogleMap(
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
-            initialCameraPosition: CameraPosition(
-              target: _mapCenter,
-              zoom: 14.5,
-            ),
-            markers: _buildMarkers(),
-            myLocationEnabled: widget.tracker.isTracking,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            compassEnabled: false,
-            mapType: MapType.normal,
-            liteModeEnabled: false,
+          // Custom SVG-style Metro Map Background
+          Positioned.fill(
+            child: CustomPaint(painter: _MetroMapPainter()),
           ),
 
           // ── LIVE FEED badge (top-left) ──────────────────────────────
           Positioned(
-            top: 10,
-            left: 10,
+            top: 12,
+            left: 12,
             child: Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A2A5E).withValues(alpha: 0.92),
+                color: const Color(0xFF1A2A5E),
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Row(
@@ -530,7 +448,7 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
                     width: 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: widget.tracker.isTracking
+                      color: tracker.isTracking
                           ? const Color(0xFF1DB954)
                           : Colors.grey,
                       shape: BoxShape.circle,
@@ -538,7 +456,7 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    widget.tracker.isTracking ? 'LIVE FEED' : 'GPS OFF',
+                    tracker.isTracking ? 'LIVE FEED' : 'GPS OFF',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 9,
@@ -553,8 +471,8 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
 
           // ── Timer card (top-right) ──────────────────────────────────
           Positioned(
-            top: 10,
-            right: 10,
+            top: 12,
+            right: 12,
             child: Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -563,7 +481,7 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
                 borderRadius: BorderRadius.circular(7),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -574,9 +492,8 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    widget.tracker.isTracking &&
-                            widget.tracker.nearby.isNotEmpty
-                        ? widget.tracker.nearby.first.walkMinutes
+                    tracker.isTracking && tracker.nearby.isNotEmpty
+                        ? tracker.nearby.first.walkMinutes
                             .toString()
                             .padLeft(2, '0')
                         : '--',
@@ -603,76 +520,61 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
             ),
           ),
 
-          // ── Station info bar (bottom) ───────────────────────────────
+          // ── Station name + line (bottom-left) ───────────────────────
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.93),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          currentStation,
-                          style: TextStyle(
-                            color: lineColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          widget.tracker.nearby.isNotEmpty
-                              ? 'Next: ${widget.tracker.nearby.first.station.line}'
-                              : 'Start GPS to see nearby stations',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
+            bottom: 14,
+            left: 14,
+            right: 60,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  currentStation,
+                  style: TextStyle(
+                    color: lineColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
-                  // Re-center button
-                  GestureDetector(
-                    onTap: () {
-                      final pos = widget.tracker.position;
-                      if (pos != null && _mapController != null) {
-                        _mapController!.animateCamera(
-                          CameraUpdate.newCameraPosition(
-                            CameraPosition(
-                              target:
-                                  LatLng(pos.latitude, pos.longitude),
-                              zoom: 15,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0D1B3E),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: const Icon(
-                        Icons.my_location,
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                    ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  tracker.nearby.isNotEmpty
+                      ? 'Next: ${tracker.nearby.first.station.line}'
+                      : 'Start GPS to see nearby stations',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Location button (bottom-right) ──────────────────────────
+          Positioned(
+            bottom: 14,
+            right: 14,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ],
+              ),
+              child: const Icon(
+                Icons.my_location,
+                size: 16,
+                color: Color(0xFF0D1B3E),
               ),
             ),
           ),
@@ -680,6 +582,88 @@ class _MetroMapWidgetState extends State<_MetroMapWidget> {
       ),
     );
   }
+}
+
+// ── Metro Map Painter ─────────────────────────────────────────────────────────
+
+class _MetroMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bluePaint = Paint()
+      ..color = const Color(0xFFADCEF0)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final greenPaint = Paint()
+      ..color = const Color(0xFFA8D5A2)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final yellowPaint = Paint()
+      ..color = const Color(0xFFF5D87E)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final dotPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final dotBorderPaint = Paint()
+      ..color = const Color(0xFF90B8DA)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final w = size.width;
+    final h = size.height;
+
+    // Blue line (horizontal with curves)
+    final path1 = Path();
+    path1.moveTo(0, h * 0.4);
+    path1.quadraticBezierTo(w * 0.25, h * 0.2, w * 0.5, h * 0.45);
+    path1.quadraticBezierTo(w * 0.75, h * 0.65, w, h * 0.5);
+    canvas.drawPath(path1, bluePaint);
+
+    // Blue line branch
+    final path1b = Path();
+    path1b.moveTo(w * 0.5, h * 0.45);
+    path1b.quadraticBezierTo(w * 0.55, h * 0.1, w * 0.8, 0);
+    canvas.drawPath(path1b, bluePaint);
+
+    // Green line (diagonal)
+    final path2 = Path();
+    path2.moveTo(0, h * 0.7);
+    path2.quadraticBezierTo(w * 0.35, h * 0.5, w * 0.65, h * 0.35);
+    path2.lineTo(w, h * 0.2);
+    canvas.drawPath(path2, greenPaint);
+
+    // Yellow line (short curve)
+    final path3 = Path();
+    path3.moveTo(0, h * 0.85);
+    path3.quadraticBezierTo(w * 0.3, h * 0.75, w * 0.55, h * 0.65);
+    canvas.drawPath(path3, yellowPaint);
+
+    // Station dots
+    final stations = [
+      Offset(w * 0.0, h * 0.4),
+      Offset(w * 0.25, h * 0.32),
+      Offset(w * 0.5, h * 0.45),
+      Offset(w * 0.75, h * 0.58),
+      Offset(w * 1.0, h * 0.5),
+      Offset(w * 0.35, h * 0.53),
+      Offset(w * 0.65, h * 0.38),
+    ];
+
+    for (final s in stations) {
+      canvas.drawCircle(s, 4, dotPaint);
+      canvas.drawCircle(s, 4, dotBorderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ── Arriving Soon Station Card ────────────────────────────────────────────────

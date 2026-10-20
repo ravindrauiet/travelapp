@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -21,6 +22,7 @@ class NotificationService {
 
   /// Call once from main() before runApp().
   static Future<void> init() async {
+    if (kIsWeb) return;
     if (_initialized) return;
 
     const AndroidInitializationSettings androidSettings =
@@ -60,6 +62,7 @@ class NotificationService {
 
   /// Request notification permission on Android 13+ / iOS.
   static Future<bool> requestPermission() async {
+    if (kIsWeb) return false;
     try {
       final android = _plugin
           .resolvePlatformSpecificImplementation<
@@ -88,7 +91,7 @@ class NotificationService {
   /// Show "Approaching [station]" notification.
   static Future<void> showApproachingStation(
       String stationName, int distanceMetres) async {
-    if (!_initialized) return;
+    if (kIsWeb || !_initialized) return;
     try {
       await _plugin.show(
         _idApproaching,
@@ -103,7 +106,7 @@ class NotificationService {
 
   /// Show "Arrived at [station]" notification.
   static Future<void> showArrivedAtStation(String stationName) async {
-    if (!_initialized) return;
+    if (kIsWeb || !_initialized) return;
     try {
       await _plugin.show(
         _idArrived,
@@ -122,7 +125,7 @@ class NotificationService {
     required String nextStation,
     required int remainingStations,
   }) async {
-    if (!_initialized) return;
+    if (kIsWeb || !_initialized) return;
     try {
       await _plugin.show(
         _idRouteUpdate,
@@ -137,6 +140,7 @@ class NotificationService {
 
   /// Cancel all active notifications.
   static Future<void> cancelAll() async {
+    if (kIsWeb) return;
     try {
       await _plugin.cancelAll();
     } catch (e) {

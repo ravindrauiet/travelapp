@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/bus_provider.dart';
 import '../../models/bus_station.dart';
-import '../../utils/app_theme.dart';
+import '../../widgets/bottom_navigation.dart';
 
 class BusStopLocatorScreen extends StatefulWidget {
   const BusStopLocatorScreen({super.key});
@@ -25,481 +25,297 @@ class _BusStopLocatorScreenState extends State<BusStopLocatorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8FC),
       appBar: AppBar(
-        title: const Text('Bus Stop Locator'),
-        backgroundColor: AppTheme.warningColor,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Nearby Bus Stops',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.my_location_rounded, color: Color(0xFF16A34A)),
+            onPressed: () => context.read<LocationProvider>().getCurrentLocation(),
+            tooltip: 'Refresh Location',
+          ),
+        ],
       ),
       body: Consumer2<BusProvider, LocationProvider>(
         builder: (context, busProvider, locationProvider, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Instructions
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.bus_alert, color: AppTheme.warningColor),
-                            SizedBox(width: 8),
-                            Text(
-                              'Bus Stop Locator',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Find nearby bus stops and see which buses are available at each stop.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Current Location Card
-                if (locationProvider.currentAddress != null)
-                  Card(
-                    color: AppTheme.warningColor.withOpacity(0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+          final pos = locationProvider.currentPosition;
+          final stations = pos != null
+              ? busProvider.findNearestStations(pos.latitude, pos.longitude)
+              : busProvider.stations;
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Location Status Banner
+                      _buildLocationHeader(locationProvider),
+                      const SizedBox(height: 18),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.location_on, color: AppTheme.warningColor),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Current Location',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                Text(
-                                  locationProvider.currentAddress!,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                          const Text(
+                            'Bus Stops in Your Area',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${stations.length} STOPS',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF15803D),
+                              ),
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bus Stops List
+              if (busProvider.isLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF16A34A)),
+                  ),
+                )
+              else if (stations.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No bus stops found nearby',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                        ),
+                      ],
                     ),
                   ),
-                
-                const SizedBox(height: 20),
-                
-                // Nearest Stops
-                const Text(
-                  'Nearest Bus Stops',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final stop = stations[index];
+                        final distance = pos != null
+                            ? locationProvider.getDistanceTo(stop.latitude, stop.longitude)
+                            : null;
+                        return _buildStopCard(stop, distance);
+                      },
+                      childCount: stations.length,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                
-                Expanded(
-                  child: _buildStopsList(busProvider, locationProvider),
-                ),
-              ],
-            ),
+            ],
           );
         },
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 2),
     );
   }
 
-  Widget _buildStopsList(BusProvider busProvider, LocationProvider locationProvider) {
-    if (busProvider.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
+  Widget _buildLocationHeader(LocationProvider locationProvider) {
+    final addr = locationProvider.currentAddress ?? 'Detecting GPS Location…';
 
-    if (locationProvider.currentPosition == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.location_off,
-              size: 64,
-              color: Colors.grey,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Location not available',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
+            child: const Icon(Icons.near_me_rounded, color: Color(0xFF16A34A), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'CURRENT LOCATION',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  addr,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Please enable location services to find nearby bus stops',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
+          ),
+          if (locationProvider.isLoading)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A)),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                locationProvider.getCurrentLocation();
-              },
-              child: const Text('Enable Location'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final nearestStops = busProvider.findNearestStations(
-      locationProvider.currentPosition!.latitude,
-      locationProvider.currentPosition!.longitude,
-    );
-
-    if (nearestStops.isEmpty) {
-      return const Center(
-        child: Text(
-          'No bus stops found nearby',
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: nearestStops.length,
-      itemBuilder: (context, index) {
-        final stop = nearestStops[index];
-        final distance = locationProvider.getDistanceTo(
-          stop.latitude,
-          stop.longitude,
-        );
-        
-        return _buildStopCard(stop, distance);
-      },
+        ],
+      ),
     );
   }
 
   Widget _buildStopCard(BusStation stop, double? distance) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warningColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.bus_alert,
-                    color: AppTheme.warningColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        stop.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Code: ${stop.code}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (distance != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.warningColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${distance.toStringAsFixed(1)} km',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.warningColor,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Bus Numbers
-            if (stop.busNumbers.isNotEmpty) ...[
-              const Text(
-                'Available Buses:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: stop.busNumbers.map((busNumber) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.infoColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      busNumber,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.infoColor,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-            
-            const SizedBox(height: 12),
-            
-            // Facilities
-            if (stop.facilities.isNotEmpty) ...[
-              const Text(
-                'Facilities:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: stop.facilities.map((facility) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      facility,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-            
-            const SizedBox(height: 12),
-            
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _showStopDetails(stop);
-                    },
-                    icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('Details'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.warningColor,
-                      side: const BorderSide(color: AppTheme.warningColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showLiveTimings(stop);
-                    },
-                    icon: const Icon(Icons.schedule, size: 16),
-                    label: const Text('Live Timing'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.warningColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-    );
-  }
-
-  void _showStopDetails(BusStation stop) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.8,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                stop.name,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Code: ${stop.code}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 16),
               Expanded(
-                child: ListView(
-                  controller: scrollController,
+                child: Row(
                   children: [
-                    _buildDetailSection(
-                      'Available Buses',
-                      stop.busNumbers,
-                      Icons.directions_bus,
-                      AppTheme.infoColor,
-                    ),
-                    _buildDetailSection(
-                      'Facilities',
-                      stop.facilities,
-                      Icons.local_offer,
-                      AppTheme.warningColor,
-                    ),
-                    if (stop.isTerminal)
-                      const Card(
-                        color: Colors.green,
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.terminal, color: Colors.white),
-                              SizedBox(width: 8),
-                              Text(
-                                'Terminal Station',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      child: const Icon(Icons.directions_bus_rounded, color: Color(0xFF16A34A), size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            stop.name,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            'Code: ${stop.code} ${stop.isTerminal ? '• Terminal' : ''}',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<String> items, IconData icon, Color color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: items.map((item) {
-                return Container(
+              if (distance != null)
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: color,
+                    '${distance.toStringAsFixed(1)} km',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
-  void _showLiveTimings(BusStation stop) {
-    // This would show live timings for the specific stop
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Live timings for ${stop.name} would be shown here'),
+          // Bus numbers available chips
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: stop.busNumbers.map((bus) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Text(
+                  bus,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF15803D),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

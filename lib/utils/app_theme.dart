@@ -1,37 +1,92 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Modern Color Palette
-  static const Color primaryColor = Color(0xFF1A237E); // Deep Blue
-  static const Color secondaryColor = Color(0xFF3F51B5); // Indigo
-  static const Color accentColor = Color(0xFFFF6B35); // Vibrant Orange
-  static const Color errorColor = Color(0xFFE53E3E); // Modern Red
-  static const Color warningColor = Color(0xFFF6AD55); // Warm Orange
-  static const Color infoColor = Color(0xFF3182CE); // Modern Blue
-  static const Color successColor = Color(0xFF38A169); // Modern Green
+  // Consumer Super-App Color Palette (Zomato / Blinkit / Swiggy inspired)
+  static const Color primaryColor = Color(0xFF0F172A); // Deep Midnight Slate
+  static const Color secondaryColor = Color(0xFF2563EB); // Vibrant Electric Sapphire
+  static const Color accentColor = Color(0xFFFF4D2D); // Energetic Coral / Flame
+  static const Color errorColor = Color(0xFFEF4444); // Modern Red
+  static const Color warningColor = Color(0xFFF59E0B); // Warm Amber
+  static const Color infoColor = Color(0xFF0284C7); // Sky Transit Blue
+  static const Color successColor = Color(0xFF10B981); // Blinkit Emerald Green
   
-  // Background Colors
-  static const Color backgroundColor = Color(0xFFF7FAFC); // Light Gray
-  static const Color surfaceColor = Color(0xFFFFFFFF); // White
-  static const Color cardColor = Color(0xFFFFFFFF); // White
+  // Background & Surface
+  static const Color backgroundColor = Color(0xFFF6F8FC); // Soft Slate Gray (eliminates all-white look)
+  static const Color surfaceColor = Color(0xFFFFFFFF); // Pure Crisp White
+  static const Color cardColor = Color(0xFFFFFFFF); // Pure Crisp White
   
   // Text Colors
-  static const Color textPrimary = Color(0xFF1A202C); // Dark Gray
-  static const Color textSecondary = Color(0xFF4A5568); // Medium Gray
-  static const Color textTertiary = Color(0xFF718096); // Light Gray
+  static const Color textPrimary = Color(0xFF0F172A); // High Contrast Deep Charcoal
+  static const Color textSecondary = Color(0xFF475569); // Modern Slate Grey
+  static const Color textTertiary = Color(0xFF94A3B8); // Subtle Light Grey
+  static const Color dividerColor = Color(0xFFE2E8F0); // Subtle Border Grey
   
-  // Metro Line Colors (Delhi Metro Official Colors)
-  static const Color metroBlue = Color(0xFF0066CC); // Blue Line
-  static const Color metroRed = Color(0xFFCC0000); // Red Line
-  static const Color metroYellow = Color(0xFFFFD700); // Yellow Line
-  static const Color metroGreen = Color(0xFF00AA44); // Green Line
-  static const Color metroViolet = Color(0xFF8E24AA); // Violet Line
-  static const Color metroPink = Color(0xFFE91E63); // Pink Line
-  static const Color metroMagenta = Color(0xFF9C27B0); // Magenta Line
-  static const Color metroPurple = Color(0xFF8E24AA); // Purple Line
-  static const Color metroOrange = Color(0xFFFF5722); // Orange Line
-  static const Color metroGrey = Color(0xFF607D8B); // Grey Line
-  static const Color metroAqua = Color(0xFF00BCD4); // Aqua Line
+  // Metro Line Colors (Authentic Delhi Metro Colors with high vibrance)
+  static const Color metroBlue = Color(0xFF1D4ED8); // Blue Line
+  static const Color metroRed = Color(0xFFDC2626); // Red Line
+  static const Color metroYellow = Color(0xFFF59E0B); // Yellow Line
+  static const Color metroGreen = Color(0xFF16A34A); // Green Line
+  static const Color metroViolet = Color(0xFF7C3AED); // Violet Line
+  static const Color metroPink = Color(0xFFDB2777); // Pink Line
+  static const Color metroMagenta = Color(0xFFC026D3); // Magenta Line
+  static const Color metroPurple = Color(0xFF9333EA); // Purple Line
+  static const Color metroOrange = Color(0xFFEA580C); // Airport Express Orange
+  static const Color metroGrey = Color(0xFF64748B); // Grey Line
+  static const Color metroAqua = Color(0xFF06B6D4); // Aqua Line
+  static const Color metroRapid = Color(0xFF0EA5E9); // Rapid Metro
+
+  // Modern Gradients
+  static const LinearGradient heroGradient = LinearGradient(
+    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient accentGradient = LinearGradient(
+    colors: [Color(0xFFFF5238), Color(0xFFFF7A45)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient emeraldGradient = LinearGradient(
+    colors: [Color(0xFF059669), Color(0xFF10B981)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient transitGradient = LinearGradient(
+    colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // Box Shadows
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+      blurRadius: 14,
+      offset: const Offset(0, 4),
+      spreadRadius: 0,
+    ),
+  ];
+
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+      spreadRadius: 0,
+    ),
+  ];
+
+  static List<BoxShadow> get accentShadow => [
+    BoxShadow(
+      color: accentColor.withValues(alpha: 0.25),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+      spreadRadius: 0,
+    ),
+  ];
 
   static ThemeData get lightTheme {
     return ThemeData(
