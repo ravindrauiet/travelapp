@@ -87,3 +87,7 @@ app.*.map.json
 
 
 
+
+# Raw Delhi bus GTFS stop_times (118 MB, over GitHub's 100 MB limit). The app ships the
+# compact assets/data/bus_network.json built by: node tool/build_bus_network.mjs
+assets/gtfs_data_bus/stop_times.txt

@@ -138,6 +138,51 @@ class NotificationService {
     }
   }
 
+  /// "Change here" alert at an interchange on the followed route.
+  static Future<void> showInterchangeAlert(String stationName, String changeTo) async {
+    if (kIsWeb || !_initialized) return;
+    try {
+      await _plugin.show(
+        _idRouteUpdate,
+        '🔁 Change at $stationName',
+        'Get off here and change to $changeTo',
+        _buildDetails(color: 0xFFFF9800),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showInterchangeAlert error: $e');
+    }
+  }
+
+  /// One stop before the destination.
+  static Future<void> showDestinationNext(String destination) async {
+    if (kIsWeb || !_initialized) return;
+    try {
+      await _plugin.show(
+        _idRouteUpdate,
+        '🔔 Next stop: $destination',
+        'Get ready to get off at the next station',
+        _buildDetails(color: 0xFFFF9800),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showDestinationNext error: $e');
+    }
+  }
+
+  /// Destination reached — tracking stops automatically.
+  static Future<void> showDestinationReached(String destination) async {
+    if (kIsWeb || !_initialized) return;
+    try {
+      await _plugin.show(
+        _idArrived,
+        '✅ You have arrived at $destination',
+        'Journey complete — GPS tracking has been turned off',
+        _buildDetails(color: 0xFF4CAF50),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showDestinationReached error: $e');
+    }
+  }
+
   /// Cancel all active notifications.
   static Future<void> cancelAll() async {
     if (kIsWeb) return;

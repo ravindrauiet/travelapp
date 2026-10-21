@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/snake_game.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/game_bottom_navigation.dart';
@@ -335,26 +334,6 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton(IconData icon, VoidCallback onPressed) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: context.palette.tint(AppTheme.metroGreen),
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: AppTheme.metroGreen.withValues(alpha: 0.3)),
-        ),
-        child: Icon(
-          icon,
-          color: AppTheme.metroGreen,
-          size: 24,
-        ),
       ),
     );
   }

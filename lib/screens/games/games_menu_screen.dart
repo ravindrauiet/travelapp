@@ -41,19 +41,18 @@ class GamesMenuScreen extends StatelessWidget {
                     children: [
                       TagPill(label: '5 GAMES', color: Colors.white, icon: Icons.sports_esports_rounded, onDark: true),
                       TagPill(label: 'OFFLINE', color: Colors.white, icon: Icons.wifi_off_rounded, onDark: true),
-                      TagPill(label: 'HIGH SCORES', color: Colors.white, icon: Icons.emoji_events_rounded, onDark: true),
+                      TagPill(
+                          label: 'HIGH SCORES', color: Colors.white, icon: Icons.emoji_events_rounded, onDark: true),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 22),
               const SectionHeader(
                 title: 'Available Games',
                 subtitle: 'Pick one and beat your best',
               ),
               const SizedBox(height: 14),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
@@ -108,11 +107,9 @@ class GamesMenuScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 26),
               const SectionHeader(title: 'Game Features'),
               const SizedBox(height: 12),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: AppCard(
@@ -153,11 +150,9 @@ class GamesMenuScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 26),
               const SectionHeader(title: 'Game Tips'),
               const SizedBox(height: 12),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: AppCard(
@@ -551,7 +546,8 @@ class _FeaturedGameCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const TagPill(label: 'FEATURED', color: Colors.white, icon: Icons.star_rounded, onDark: true),
+                            const TagPill(
+                                label: 'FEATURED', color: Colors.white, icon: Icons.star_rounded, onDark: true),
                             const SizedBox(height: 6),
                             Text(
                               title,
@@ -635,47 +631,51 @@ class _GameCard extends StatelessWidget {
                   bottom: -18,
                   child: Icon(icon, size: 96, color: Colors.white.withValues(alpha: 0.13)),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                // Fixed-size tile: cap text scaling so large accessibility text fits.
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 24),
                         ),
-                        child: Icon(icon, color: Colors.white, size: 24),
-                      ),
-                      const Spacer(),
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
+                        const Spacer(),
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      const TagPill(label: 'PLAY', color: Colors.white, icon: Icons.play_arrow_rounded, onDark: true),
-                    ],
+                        const SizedBox(height: 10),
+                        const TagPill(label: 'PLAY', color: Colors.white, icon: Icons.play_arrow_rounded, onDark: true),
+                      ],
+                    ),
                   ),
                 ),
               ],

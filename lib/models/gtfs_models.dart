@@ -285,6 +285,16 @@ class GTFSVehiclePosition {
   final int? directionId;
   final double? odometer;
 
+  /// Public label painted on the bus. In Delhi this is the registration, e.g. "DL1PD6453".
+  final String? label;
+
+  /// Scheduled trip start ("HH:MM:SS") and service date ("YYYYMMDD").
+  final String? startTime;
+  final String? startDate;
+
+  /// GTFS-RT trip schedule relationship, e.g. "SCHEDULED" or "ADDED".
+  final String? scheduleRelationship;
+
   GTFSVehiclePosition({
     required this.vehicleId,
     required this.tripId,
@@ -299,7 +309,17 @@ class GTFSVehiclePosition {
     this.currentStatus,
     this.directionId,
     this.odometer,
+    this.label,
+    this.startTime,
+    this.startDate,
+    this.scheduleRelationship,
   });
+
+  /// Bus registration if the feed has one, otherwise the vehicle id.
+  String get registration => (label != null && label!.isNotEmpty) ? label! : vehicleId;
+
+  /// Time of the position fix (timestamps are stored in milliseconds).
+  DateTime get time => DateTime.fromMillisecondsSinceEpoch(timestamp);
 
   factory GTFSVehiclePosition.fromJson(Map<String, dynamic> json) {
     return GTFSVehiclePosition(
@@ -316,6 +336,10 @@ class GTFSVehiclePosition {
       currentStatus: json['currentStatus'],
       directionId: json['directionId'],
       odometer: (json['odometer'] as num?)?.toDouble(),
+      label: json['label'],
+      startTime: json['startTime'],
+      startDate: json['startDate'],
+      scheduleRelationship: json['scheduleRelationship'],
     );
   }
 }

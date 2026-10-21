@@ -37,6 +37,30 @@ extension AppPaletteContext on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 }
 
+// ── Navigation helpers ───────────────────────────────────────────────────────
+
+/// Top-level sections that have no parent page.
+const Set<String> kRootRoutes = {'/', '/metro', '/bus', '/transport', '/weather'};
+
+/// The section a sub-page belongs to, used when there is nothing to pop
+/// (e.g. the page was opened from the drawer or a deep link).
+String parentRouteOf(String location) {
+  final path = Uri.tryParse(location)?.path ?? location;
+  if (path.startsWith('/metro/')) return '/metro';
+  if (path.startsWith('/bus/')) return '/bus';
+  if (path.startsWith('/games/')) return '/games';
+  return '/';
+}
+
+/// Location of the current GoRouter page, or null outside a router.
+String? _currentLocation(BuildContext context) {
+  try {
+    return GoRouterState.of(context).matchedLocation;
+  } catch (_) {
+    return null;
+  }
+}
+
 // ── Gradient page header ────────────────────────────────────────────────────
 
 /// Immersive gradient header used at the top of screens instead of a plain AppBar.
@@ -71,6 +95,11 @@ class GradientHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
     final canPop = Navigator.of(context).canPop();
+    final location = _currentLocation(context);
+    // With nothing to pop, sub-pages still get a back button to their section.
+    final VoidCallback? fallbackBack = !canPop && location != null && !kRootRoutes.contains(location)
+        ? () => context.go(parentRouteOf(location))
+        : null;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
@@ -99,11 +128,11 @@ class GradientHeader extends StatelessWidget {
                     children: [
                       if (leading != null)
                         leading!
-                      else if (showBack && (canPop || onBack != null))
+                      else if (showBack && (canPop || onBack != null || fallbackBack != null))
                         HeaderIconButton(
                           icon: Icons.arrow_back_ios_new_rounded,
                           tooltip: 'Back',
-                          onTap: onBack ?? () => context.pop(),
+                          onTap: onBack ?? (canPop ? () => context.pop() : fallbackBack!),
                         ),
                       const Spacer(),
                       ...?actions,
@@ -427,9 +456,13 @@ class TagPill extends StatelessWidget {
             Icon(icon, size: 12, color: fg),
             const SizedBox(width: 4),
           ],
-          Text(
-            label,
-            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: fg, letterSpacing: 0.3),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: fg, letterSpacing: 0.3),
+            ),
           ),
         ],
       ),
@@ -513,11 +546,15 @@ class StatTile extends StatelessWidget {
         children: [
           IconBubble(icon: icon, color: color, size: 34, radius: 10),
           const SizedBox(height: 10),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: p.textPrimary, letterSpacing: -0.3),
+          // Numbers must never be cut off: shrink long values on narrow phones.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: p.textPrimary, letterSpacing: -0.3),
+            ),
           ),
           Text(
             label,

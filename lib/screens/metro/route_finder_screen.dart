@@ -8,6 +8,9 @@ import '../../widgets/searchable_station_dropdown.dart';
 import '../../widgets/ui_kit.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../services/recent_routes_service.dart';
+import '../../services/gtfs_graph_service.dart';
+import '../../services/accurate_fare_calculator.dart';
+import '../../utils/user_location.dart';
 
 class MetroRouteFinderScreen extends StatefulWidget {
   final String? initialFrom;
@@ -30,20 +33,100 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
   bool _isSearching = false;
   bool _searched = false; // true once user has pressed Find Route at least once
   List<RecentRoute> _recentRoutes = [];
+  bool _locating = false;
 
   @override
   void initState() {
     super.initState();
-    _fromStation = widget.initialFrom;
-    _toStation = widget.initialTo;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MetroProvider>().loadStations().then((_) {
-        if (mounted && _fromStation != null && _toStation != null) {
-          _searchRoutes();
-        }
-      });
+    _fromStation = _nonEmpty(widget.initialFrom);
+    _toStation = _nonEmpty(widget.initialTo);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _loadRecentRoutes();
+      await context.read<MetroProvider>().loadStations();
+      if (!mounted) return;
+      // Deep links may carry landmark-ish or old spellings ("Noida Sec 18",
+      // "IGI Airport T3") — map them to the station names in the picker.
+      final unknown = <String>[];
+      Future<String?> resolve(String? name) async {
+        if (name == null) return null;
+        String? r;
+        try {
+          r = await GTFSGraphService.resolveStationName(name);
+        } catch (_) {
+          r = null;
+        }
+        if (r == null) unknown.add(name);
+        return r;
+      }
+
+      final from = await resolve(_fromStation);
+      final to = await resolve(_toStation);
+      if (!mounted) return;
+      setState(() {
+        _fromStation = from;
+        _toStation = to;
+      });
+      if (unknown.isNotEmpty) {
+        _showMessage('Couldn\'t find "${unknown.join('", "')}" — please pick the station from the list.');
+      }
+      if (_fromStation != null && _toStation != null) {
+        _searchRoutes();
+      }
     });
+  }
+
+  static String? _nonEmpty(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
+
+  void _showMessage(String text, {SnackBarAction? action}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text), action: action));
+  }
+
+  /// Fills the FROM field with the metro station nearest to the user.
+  Future<void> _useNearestStation() async {
+    if (_locating) return;
+    final metroProvider = context.read<MetroProvider>();
+    setState(() => _locating = true);
+    final result = await getUserLocation();
+    if (!mounted) return;
+    setState(() => _locating = false);
+
+    if (!result.ok) {
+      final msg = switch (result.issue) {
+        LocationIssue.serviceOff => 'Location (GPS) is turned off. Turn it on to find your nearest station.',
+        LocationIssue.denied => 'Location permission denied. You can still pick a station from the list.',
+        LocationIssue.deniedForever => 'Location access is blocked for Metromate. Enable it in Settings.',
+        _ => 'Couldn\'t get your location right now. Please pick a station from the list.',
+      };
+      _showMessage(
+        msg,
+        action: result.needsSettings
+            ? SnackBarAction(label: 'Settings', onPressed: () => openLocationSettingsFor(result.issue))
+            : null,
+      );
+      return;
+    }
+
+    final pos = result.position!;
+    final nearest = metroProvider.findNearestStations(pos.latitude, pos.longitude, limit: 1);
+    if (nearest.isEmpty) {
+      _showMessage('Stations are still loading — try again in a moment.');
+      return;
+    }
+    final station = nearest.first;
+    final km = AccurateFareCalculator.calculateDistance(
+        pos.latitude, pos.longitude, station.latitude, station.longitude);
+    setState(() {
+      _fromStation = station.name;
+      _routes = [];
+      _searched = false;
+    });
+    final away = km < 1 ? '${(km * 1000).round()} m' : '${km.toStringAsFixed(1)} km';
+    _showMessage(km > 15
+        ? 'Nearest metro station is ${station.name}, $away away — you seem to be outside the metro area.'
+        : 'Nearest station: ${station.name} ($away away)');
   }
 
   Future<void> _loadRecentRoutes() async {
@@ -68,6 +151,10 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
 
   Future<void> _searchRoutes() async {
     if (!_canSearch()) return;
+    if (_fromStation!.toLowerCase() == _toStation!.toLowerCase()) {
+      _showMessage('Starting point and destination are the same station. Pick a different destination.');
+      return;
+    }
     setState(() {
       _isSearching = true;
       _searched = true;
@@ -76,9 +163,11 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
     final metroProvider = context.read<MetroProvider>();
     final routes = await metroProvider.findRoute(_fromStation!, _toStation!);
 
-    // Save to recent routes regardless of result (user intended this search)
-    await RecentRoutesService.add(_fromStation!, _toStation!);
-    await _loadRecentRoutes();
+    // Remember successful searches only (with the canonical station names).
+    if (routes.isNotEmpty) {
+      await RecentRoutesService.add(routes.first.fromStation, routes.first.toStation);
+      await _loadRecentRoutes();
+    }
 
     if (mounted) {
       setState(() {
@@ -95,6 +184,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
       _routes = [];
       _searched = false;
     });
+    _searchRoutes();
   }
 
   // Segments whose full station list the user has expanded (UI-only state).
@@ -243,7 +333,32 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
           const SizedBox(height: 18),
 
           // From field
-          fieldLabel('FROM', AppTheme.successColor),
+          Row(
+            children: [
+              Expanded(child: fieldLabel('FROM', AppTheme.successColor)),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: TextButton.icon(
+                  onPressed: _locating || metroProvider.stations.isEmpty ? null : _useNearestStation,
+                  icon: _locating
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: p.primary),
+                        )
+                      : const Icon(Icons.my_location_rounded, size: 16),
+                  label: Text(_locating ? 'Locating…' : 'Nearest station'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.successColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, fontFamily: AppTheme.fontFamily),
+                  ),
+                ),
+              ),
+            ],
+          ),
           SearchableStationDropdown(
             stations: metroProvider.stations,
             selectedStation: _fromStation,
@@ -467,7 +582,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
         child: Center(
           child: EmptyState(
             title: 'No route found',
-            message:
+            message: metroProvider.error ??
                 'We couldn\'t find a route between ${_fromStation ?? ''} and ${_toStation ?? ''}. Try different stations.',
             action: GradientButton(
               label: 'Try Again',
@@ -547,7 +662,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                                   style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w600),
                                 ),
                                 TextSpan(
-                                  text: route.interchangeStations.join(' → '),
+                                  text: route.interchangeStations.join(', '),
                                   style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w800),
                                 ),
                               ],
@@ -576,13 +691,15 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                 ),
                 const SizedBox(height: 12),
                 ...route.segments.asMap().entries.map(
-                      (e) => _buildDetailedSegment(
-                        e.value,
-                        e.key + 1,
-                        route.segments.length,
-                        segmentKey: '${route.id}-$index-${e.key}',
-                        nextSegment: e.key + 1 < route.segments.length ? route.segments[e.key + 1] : null,
-                      ),
+                      (e) => e.value.line == GTFSGraphService.walkLine
+                          ? _buildWalkLeg(e.value)
+                          : _buildDetailedSegment(
+                              e.value,
+                              e.key + 1,
+                              route.segments.length,
+                              segmentKey: '${route.id}-$index-${e.key}',
+                              nextSegment: e.key + 1 < route.segments.length ? route.segments[e.key + 1] : null,
+                            ),
                     ),
 
                 const SizedBox(height: 6),
@@ -598,7 +715,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Save 10%–20% on every ride using DMRC Smart Card.',
+                          _fareNote(route),
                           style: TextStyle(fontSize: 12, color: p.textSecondary, fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -735,7 +852,7 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: route.segments.map((s) {
+            children: route.segments.where((s) => s.line != GTFSGraphService.walkLine).map((s) {
               final c = _parseLineColor(s.lineColor);
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -773,7 +890,8 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              stat(Icons.currency_rupee_rounded, '₹${route.totalFare.toStringAsFixed(0)}', 'Fare'),
+              stat(Icons.currency_rupee_rounded, '₹${route.totalFare.toStringAsFixed(0)}',
+                  route.fareLegs.length > 1 ? '${route.fareLegs.length} tickets' : 'Token fare'),
               const SizedBox(width: 8),
               stat(Icons.train_rounded, '${route.totalStations}', 'Stops'),
               const SizedBox(width: 8),
@@ -867,11 +985,65 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
             ],
           ),
         ),
-        if (segmentNumber < totalSegments)
+        if (segmentNumber < totalSegments && nextSegment?.line != GTFSGraphService.walkLine)
           _buildInterchangeConnector(segment, lineColor, nextSegment)
         else
           const SizedBox(height: 12),
       ],
+    );
+  }
+
+  String _fareNote(MetroRoute route) {
+    final card = route.smartCardFare?.round();
+    final parts = <String>[];
+    if (route.fareLegs.length > 1) {
+      parts.add('Separate tickets: ${route.fareLegs.map((l) => '${l.system.label} ₹${l.tokenFare}').join(' + ')}.');
+    }
+    if (card != null && card < route.totalFare.round()) {
+      parts.add('Smart Card now: ₹$card (10% off, 20% off-peak).');
+    }
+    if (route.distanceKm > 0) parts.add('${route.distanceKm.toStringAsFixed(1)} km.');
+    if (route.fareIsApproximate) parts.add('Non-DMRC fares are approximate.');
+    parts.add('Time is typical from the timetable, excl. waiting.');
+    return parts.join(' ');
+  }
+
+  Widget _buildWalkLeg(RouteSegment walk) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: p.tint(AppTheme.warningColor),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.directions_walk_rounded, size: 18, color: AppTheme.warningColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Walk to ${walk.toStation}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textPrimary),
+                  ),
+                  Text(
+                    'From ${walk.fromStation} via the linked walkway · ~${walk.timeMinutes} min',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -919,7 +1091,14 @@ class _MetroRouteFinderScreenState extends State<MetroRouteFinderScreen> {
                           style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textPrimary),
                         ),
                         Text(
-                          next != null ? 'Walk to ${next.line} platform' : 'Change platform here',
+                          next == null
+                              ? 'Change platform here'
+                              : next.line == segment.line
+                                  ? 'Change trains here (branch line)'
+                                  : GTFSGraphService.fareSystemFor(next.line) !=
+                                          GTFSGraphService.fareSystemFor(segment.line)
+                                      ? 'Exit & buy a separate ${next.line} ticket'
+                                      : 'Walk to ${next.line} platform',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary),

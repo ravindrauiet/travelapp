@@ -6,6 +6,7 @@ import '../../utils/app_theme.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/searchable_station_dropdown.dart';
 import '../../widgets/ui_kit.dart';
+import '../../models/metro_route.dart';
 
 class MetroFareCalculatorScreen extends StatefulWidget {
   const MetroFareCalculatorScreen({super.key});
@@ -44,12 +45,19 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
   void _calculateFare() async {
     if (!_canCalculate()) return;
 
+    if (_fromStation!.toLowerCase() == _toStation!.toLowerCase()) {
+      _showError('Starting and destination station are the same. Pick a different destination.');
+      return;
+    }
+
     setState(() {
       _isCalculating = true;
     });
 
     try {
       final metroProvider = context.read<MetroProvider>();
+      // Same route computation as the Route Finder: fare follows the fastest
+      // route's track distance, one ticket per fare system.
       final fareData = await metroProvider.calculateFare(_fromStation!, _toStation!);
 
       if (mounted) {
@@ -57,6 +65,9 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
           _fareData = fareData;
           _isCalculating = false;
         });
+        if (fareData == null) {
+          _showError(metroProvider.error ?? 'Could not calculate the fare. Please try again.');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -71,6 +82,12 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
         );
       }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message), backgroundColor: AppTheme.errorColor));
   }
 
   @override
@@ -366,6 +383,12 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
     final savings = _fareData!['totalSavings'] ?? 0.0;
     final mpt = _fareData!['mpt'] ?? 65;
     final isOffPeak = _fareData!['isOffPeak'] ?? false;
+    final isHoliday = _fareData!['isHoliday'] ?? false;
+    final distanceKm = (_fareData!['distanceKm'] ?? 0.0) as double;
+    final stops = _fareData!['stations'] ?? 0;
+    final changes = _fareData!['interchanges'] ?? 0;
+    final fareLegs = (_fareData!['fareLegs'] as List<FareLeg>?) ?? const <FareLeg>[];
+    final approximate = _fareData!['approximate'] == true;
 
     return Container(
       decoration: BoxDecoration(
@@ -399,7 +422,9 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                 ),
                 const SizedBox(width: 8),
                 TagPill(
-                  label: isOffPeak ? '20% OFF-PEAK' : '10% DISCOUNT',
+                  label: isOffPeak && fareLegs.every((l) => l.system == FareSystem.dmrc)
+                      ? '20% OFF-PEAK'
+                      : '10% DISCOUNT',
                   color: Colors.white,
                   onDark: true,
                 ),
@@ -570,6 +595,40 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _infoStrip(
+                        Icons.straighten_rounded,
+                        'Route distance',
+                        '${distanceKm.toStringAsFixed(1)} km',
+                        AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _infoStrip(
+                        Icons.train_rounded,
+                        'Stops · changes',
+                        '$stops · $changes',
+                        AppTheme.brandViolet,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isHoliday || fareLegs.length > 1 || approximate) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    [
+                      if (isHoliday) 'Sunday / national-holiday fares applied.',
+                      if (fareLegs.length > 1)
+                        'Needs separate tickets: ${fareLegs.map((l) => '${l.system.label} ₹${l.tokenFare}').join(' + ')}.',
+                      if (approximate) 'Airport Express, Aqua Line and Rapid Metro fares are approximate.',
+                    ].join(' '),
+                    style: TextStyle(fontSize: 11.5, color: p.textSecondary, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ],
             ),
           ),
@@ -637,7 +696,7 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: p.textPrimary),
                     ),
                     Text(
-                      'Applicable across all normal Delhi Metro lines (2026)',
+                      'DMRC lines, effective 25 Aug 2025 (Mon–Sat)',
                       style: TextStyle(fontSize: 11.5, color: p.textTertiary),
                     ),
                   ],
@@ -680,6 +739,13 @@ class _MetroFareCalculatorScreenState extends State<MetroFareCalculatorScreen> {
           _buildFareSlabRow('12 – 21 km', '₹43', '₹39', true),
           _buildFareSlabRow('21 – 32 km', '₹54', '₹49', false),
           _buildFareSlabRow('32+ km', '₹64', '₹58', true),
+          const SizedBox(height: 10),
+          Text(
+            'Sundays & national holidays: ₹11 · 11 · 21 · 32 · 43 · 54. '
+            'Smart Card gets 10% off, plus another 10% off-peak (before 8 AM, 12–5 PM, after 9 PM). '
+            'Distance is measured along the metro route.',
+            style: TextStyle(fontSize: 11, color: p.textTertiary, height: 1.4),
+          ),
         ],
       ),
     );

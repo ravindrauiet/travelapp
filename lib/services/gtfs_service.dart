@@ -1,56 +1,33 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
-import 'package:http/http.dart' as http;
-import 'package:csv/csv.dart';
-import 'package:gtfs_realtime_bindings/gtfs_realtime_bindings.dart' as pbrt;
-import '../models/gtfs_models.dart';
-import '../utils/app_constants.dart';
+import 'package:flutter/foundation.dart';
 
+import '../models/gtfs_models.dart';
+import 'bus_network_service.dart';
+import 'live_bus_service.dart';
+
+/// Legacy GTFS facade. Live positions are delegated to [LiveBusService], which
+/// owns fetching, caching, isolate parsing and enrichment; use it directly for
+/// route numbers, nearest/next stops and typed errors.
 class GTFSService {
-  static const String _apiKey = AppConstants.otdApiKey;
-  static const String _otdRealtimeUrl = AppConstants.otdRealtimeUrl;
-  
   // Cache for static data
   static List<GTFSAgency>? _agencies;
   static List<GTFSStop>? _stops;
   static List<GTFSRoute>? _routes;
   static List<GTFSTrip>? _trips;
   static List<GTFSStopTime>? _stopTimes;
-  
-  // Cache for real-time data
-  static List<GTFSVehiclePosition>? _vehiclePositions;
-  static DateTime? _lastRealTimeUpdate;
 
-  static DateTime? get lastRealTimeUpdate => _lastRealTimeUpdate;
-  static int get totalActiveBuses => _vehiclePositions?.length ?? 0;
+  static DateTime? get lastRealTimeUpdate => LiveBusService.instance.lastSnapshot?.fetchedAt;
+  static int get totalActiveBuses => LiveBusService.instance.lastSnapshot?.count ?? 0;
 
-  /// Fetch real-time vehicle positions from Delhi Government OTD
+  /// Live vehicle positions from Delhi OTD (cached ~20 s, shared across screens).
+  /// Never throws: on failure returns the last good positions, or an empty list.
   static Future<List<GTFSVehiclePosition>> getRealTimeVehiclePositions() async {
-    final endpoint = '$_otdRealtimeUrl?key=$_apiKey';
-
     try {
-      final response = await http.get(
-        Uri.parse(endpoint),
-        headers: {
-          'Accept': 'application/octet-stream, application/x-protobuf',
-          'User-Agent': 'Metromate/1.0',
-        },
-      ).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-        final data = _parseProtobufResponse(response.bodyBytes);
-        if (data.isNotEmpty) {
-          _vehiclePositions = data;
-          _lastRealTimeUpdate = DateTime.now();
-          return data;
-        }
-      }
-    } catch (e) {
-      print('GTFSService: Live OTD fetch error: $e');
+      final snap = await LiveBusService.instance.snapshot();
+      return snap.vehicles;
+    } on LiveBusException catch (e) {
+      debugPrint('GTFSService: live feed error: $e');
+      return LiveBusService.instance.lastSnapshot?.vehicles ?? [];
     }
-
-    return _vehiclePositions ?? [];
   }
 
   /// Get vehicles near a specific location
@@ -60,19 +37,13 @@ class GTFSService {
     double radiusKm = 2.0,
   }) async {
     final vehicles = await getRealTimeVehiclePositions();
-    
-    return vehicles.where((vehicle) {
-      final distance = _calculateDistance(
-        latitude,
-        longitude,
-        vehicle.latitude,
-        vehicle.longitude,
-      );
-      return distance <= radiusKm;
-    }).toList();
+    return vehicles
+        .where((v) => BusNetworkService.distanceKm(latitude, longitude, v.latitude, v.longitude) <= radiusKm)
+        .toList();
   }
 
-  /// Get vehicles for a specific route
+  /// Live vehicles on one route direction. [routeId] is the feed's `route_id`,
+  /// which equals `BusLine.id` in the offline bus network.
   static Future<List<GTFSVehiclePosition>> getVehiclesForRoute(String routeId) async {
     final vehicles = await getRealTimeVehiclePositions();
     return vehicles.where((vehicle) => vehicle.routeId == routeId).toList();
@@ -321,129 +292,11 @@ class GTFSService {
     return _stopTimes!;
   }
 
-  /// Parse JSON response from API
-  static List<GTFSVehiclePosition> _parseJsonResponse(Map<String, dynamic> jsonData) {
-    final entities = jsonData['entity'] as List<dynamic>? ?? [];
-    final vehicles = <GTFSVehiclePosition>[];
-    
-    for (final entity in entities) {
-      try {
-        final vehicleData = entity['vehicle'];
-        if (vehicleData != null) {
-          final position = vehicleData['position'];
-          final trip = vehicleData['trip'];
-          
-          if (position != null && trip != null) {
-            vehicles.add(GTFSVehiclePosition(
-              vehicleId: vehicleData['vehicle']['id'] ?? 'unknown',
-              tripId: trip['trip_id'] ?? 'unknown',
-              routeId: trip['route_id'] ?? 'unknown',
-              directionId: trip['direction_id'],
-              latitude: (position['latitude'] as num?)?.toDouble() ?? 0.0,
-              longitude: (position['longitude'] as num?)?.toDouble() ?? 0.0,
-              bearing: (position['bearing'] as num?)?.toDouble(),
-              odometer: (position['odometer'] as num?)?.toDouble(),
-              speed: (position['speed'] as num?)?.toDouble(),
-              currentStatus: vehicleData['current_status'],
-              congestionLevel: vehicleData['congestion_level'],
-              occupancyStatus: vehicleData['occupancy_status'],
-              timestamp: (vehicleData['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-            ));
-          }
-        }
-      } catch (e) {
-        print('Error parsing vehicle entity: $e');
-        continue;
-      }
-    }
-    
-    return vehicles;
-  }
-
-  /// Parse protobuf response from Delhi Government OTD
-  static List<GTFSVehiclePosition> _parseProtobufResponse(List<int> bytes) {
-    try {
-      final feed = pbrt.FeedMessage.fromBuffer(bytes);
-      final List<GTFSVehiclePosition> list = [];
-
-      for (final entity in feed.entity) {
-        if (!entity.hasVehicle()) continue;
-        final v = entity.vehicle;
-        final pos = v.hasPosition() ? v.position : null;
-        if (pos == null) continue;
-
-        String status = 'IN_TRANSIT';
-        if (v.hasCurrentStatus()) {
-          switch (v.currentStatus) {
-            case pbrt.VehiclePosition_VehicleStopStatus.INCOMING_AT:
-              status = 'INCOMING';
-              break;
-            case pbrt.VehiclePosition_VehicleStopStatus.STOPPED_AT:
-              status = 'STOPPED';
-              break;
-            case pbrt.VehiclePosition_VehicleStopStatus.IN_TRANSIT_TO:
-              status = 'IN_TRANSIT';
-              break;
-            default:
-              status = 'IN_TRANSIT';
-          }
-        }
-
-        final vehicleId = v.hasVehicle() && v.vehicle.hasId() ? v.vehicle.id : entity.id;
-        final routeId = v.hasTrip() && v.trip.hasRouteId() ? v.trip.routeId : '';
-        final tripId = v.hasTrip() && v.trip.hasTripId() ? v.trip.tripId : '';
-        final directionId = v.hasTrip() && v.trip.hasDirectionId() ? v.trip.directionId : 0;
-        final speedKmh = pos.hasSpeed() ? (pos.speed.toDouble() * 3.6) : 0.0;
-
-        list.add(GTFSVehiclePosition(
-          vehicleId: vehicleId,
-          tripId: tripId,
-          routeId: routeId,
-          directionId: directionId,
-          latitude: pos.latitude.toDouble(),
-          longitude: pos.longitude.toDouble(),
-          bearing: pos.hasBearing() ? pos.bearing.toDouble() : 0.0,
-          speed: speedKmh,
-          currentStatus: status,
-          timestamp: v.hasTimestamp()
-              ? (v.timestamp.toInt() * 1000)
-              : DateTime.now().millisecondsSinceEpoch,
-        ));
-      }
-
-      print('GTFSService: Successfully parsed ${list.length} live vehicles from Delhi OTD');
-      return list;
-    } catch (e) {
-      print('GTFSService: Protobuf decoding error: $e');
-      return [];
-    }
-  }
-
-  /// Calculate distance between two coordinates
-  static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371; // Earth's radius in kilometers
-    
-    final double dLat = _degreesToRadians(lat2 - lat1);
-    final double dLon = _degreesToRadians(lon2 - lon1);
-    
-    final double a = 
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1) * cos(lat2) * 
-        sin(dLon / 2) * sin(dLon / 2);
-    
-    final double c = 2 * asin(sqrt(a));
-    
-    return earthRadius * c;
-  }
-
-  static double _degreesToRadians(double degrees) {
-    return degrees * (pi / 180);
-  }
-
-  /// Get real-time data freshness
+  /// Whether live data was downloaded in the last 5 minutes.
   static bool isRealTimeDataFresh() {
-    if (_lastRealTimeUpdate == null) return false;
-    return DateTime.now().difference(_lastRealTimeUpdate!).inMinutes < 5;
+    final last = lastRealTimeUpdate;
+    if (last == null) return false;
+    return DateTime.now().difference(last).inMinutes < 5;
   }
 
   /// Clear cache
@@ -453,7 +306,5 @@ class GTFSService {
     _routes = null;
     _trips = null;
     _stopTimes = null;
-    _vehiclePositions = null;
-    _lastRealTimeUpdate = null;
   }
 }

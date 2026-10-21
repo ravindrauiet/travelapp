@@ -2,11 +2,18 @@ import 'dart:math';
 import '../models/weather_data.dart';
 
 class WeatherService {
+  // Indicative values (no live weather feed). Seeded per day so numbers stay
+  // stable across refreshes instead of jumping around.
+  static Random _dailyRandom() {
+    final now = DateTime.now();
+    return Random(now.year * 10000 + now.month * 100 + now.day);
+  }
+
   Future<WeatherData> getCurrentWeather() async {
     // Realistic simulation of Delhi NCR weather
     await Future.delayed(const Duration(milliseconds: 400));
     
-    final random = Random();
+    final random = _dailyRandom();
     // Delhi pleasant/mild temperature
     final temperature = 24 + random.nextInt(8); // 24–31°C
     // Delhi typical AQI (Moderate to Poor)
@@ -36,7 +43,7 @@ class WeatherService {
   Future<List<WeatherForecast>> getWeatherForecast() async {
     await Future.delayed(const Duration(milliseconds: 300));
     
-    final random = Random();
+    final random = _dailyRandom();
     final forecasts = <WeatherForecast>[];
     final now = DateTime.now();
     

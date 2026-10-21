@@ -16,7 +16,7 @@ class FlappyBirdScreen extends StatefulWidget {
 
 class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProviderStateMixin {
   late FlappyBird _game;
-  late Timer _gameTimer;
+  Timer? _gameTimer;
   bool _isGameRunning = false;
 
   @override
@@ -27,7 +27,7 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
 
   @override
   void dispose() {
-    _gameTimer.cancel();
+    _gameTimer?.cancel();
     super.dispose();
   }
 
@@ -44,7 +44,7 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
       _isGameRunning = false;
       _game.pause();
     });
-    _gameTimer.cancel();
+    _gameTimer?.cancel();
   }
 
   void _restartGame() {
@@ -52,7 +52,7 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
       _game.restart();
       _isGameRunning = false;
     });
-    _gameTimer.cancel();
+    _gameTimer?.cancel();
   }
 
   void _startGameLoop() {

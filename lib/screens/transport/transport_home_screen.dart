@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../widgets/feature_card.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/app_drawer.dart';

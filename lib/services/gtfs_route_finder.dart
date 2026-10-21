@@ -6,7 +6,6 @@ import 'accurate_fare_calculator.dart';
 /// GTFS-based Route Finder that uses stop_times.txt for accurate station sequences
 class GTFSRouteFinder {
   static Map<String, List<StationSequence>>? _lineSequences;
-  static List<MetroStation>? _stations;
 
   /// Load station sequences from GTFS data
   static Future<void> _loadSequences() async {
@@ -100,7 +99,6 @@ class GTFSRouteFinder {
       final lineSequences = <String, Map<String, StationSequence>>{}; // lineName -> {stationId -> StationSequence}
       
       for (final tripEntry in tripStations.entries) {
-        final tripId = tripEntry.key;
         final stationsInTrip = tripEntry.value;
         
         // Sort by sequence for this trip

@@ -81,6 +81,14 @@ class _EnhancedTouristSpotsScreenState extends State<EnhancedTouristSpotsScreen>
       elevation: 0,
       scrolledUnderElevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      // Opened from the drawer there is nothing to pop: offer a way back home.
+      leading: Navigator.of(context).canPop()
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Back',
+              onPressed: () => context.go('/'),
+            ),
       title: const Text(
         'Discover Delhi',
         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.4),
@@ -141,9 +149,9 @@ class _EnhancedTouristSpotsScreenState extends State<EnhancedTouristSpotsScreen>
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        _buildStatChip(AppConstants.touristSpotsCount, 'Curated Spots', Icons.place_rounded),
+                        _buildStatChip(AppConstants.touristSpotsCount, 'Spots', Icons.place_rounded),
                         const SizedBox(width: 8),
-                        _buildStatChip('100% Metro', 'Connected', Icons.subway_rounded),
+                        _buildStatChip('100%', 'By Metro', Icons.subway_rounded),
                         const SizedBox(width: 8),
                         _buildStatChip('₹0–₹50', 'Avg Ticket', Icons.confirmation_number_rounded),
                       ],

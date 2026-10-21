@@ -9,12 +9,7 @@ class TouristSpotsScreen extends StatefulWidget {
   State<TouristSpotsScreen> createState() => _TouristSpotsScreenState();
 }
 
-class _TouristSpotsScreenState extends State<TouristSpotsScreen> with TickerProviderStateMixin {
-  late TabController _tabController;
-  String _selectedCategory = 'All';
-  
-  final List<String> _categories = ['All', 'Monuments', 'Markets', 'Parks', 'Museums', 'Religious', 'Entertainment'];
-
+class _TouristSpotsScreenState extends State<TouristSpotsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

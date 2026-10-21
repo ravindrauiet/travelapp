@@ -43,7 +43,7 @@ class _AccurateDataDemoScreenState extends State<AccurateDataDemoScreen> {
     try {
       // Load stations and routes from accurate GTFS data
       final stations = await GTFSDataParser.getMetroStations();
-      final routes = await GTFSDataParser.getMetroLines();
+      await GTFSDataParser.getMetroLines();
       
       // Convert routes to MetroRoute format for demo
       final metroRoutes = <MetroRoute>[];

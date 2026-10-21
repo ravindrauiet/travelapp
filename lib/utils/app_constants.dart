@@ -24,7 +24,7 @@ class AppConstants {
   static const String airportExpressTimeDisplay = '19 min';
 
   // ── Bus Statistics ──────────────────────────────────────────────────────────
-  static const String busRoutesCount = '700+';
+  static const String busRoutesCount = '1,000+'; // ~1,080 route numbers in the OTD GTFS feed
   static const String busFleetCount = '7,200+';
   static const String busDailyRidership = '4.2M+';
 
@@ -96,17 +96,23 @@ class AppConstants {
     'Chandni Chowk': 'Chandni Chowk',
     'Kashmere Gate': 'Kashmere Gate',
     'Noida Sec 18': 'Noida Sector 18',
-    'Gurugram Cyber City': 'Cyber City',
-    'Cyber Hub': 'Cyber City',
+    'Gurugram Cyber City': 'Cyber City (Rapid Metro)',
+    'Cyber Hub': 'Cyber City (Rapid Metro)',
+    'Cyber Hub Gurugram': 'Cyber City (Rapid Metro)',
     'Lotus Temple': 'Kalkaji Mandir',
     'Qutub Minar': 'Qutab Minar',
     'Qutab Minar': 'Qutab Minar',
     'Akshardham': 'Akshardham',
     'Akshardham Temple': 'Akshardham',
     'Dilli Haat': 'Dilli Haat - INA',
+    'Dilli Haat INA': 'Dilli Haat - INA',
     'Bangla Sahib': 'Patel Chowk',
     'Gurudwara Bangla Sahib': 'Patel Chowk',
-    'Humayun Tomb': 'JLN Stadium',
+    'Humayun Tomb': 'Jawaharlal Nehru Stadium',
+    "Humayun's Tomb": 'Jawaharlal Nehru Stadium',
+    'Sunder Nursery': 'Jawaharlal Nehru Stadium',
+    'National Rail Museum': 'Durgabai Deshmukh South Campus',
+    'Rail Museum': 'Durgabai Deshmukh South Campus',
     'National Museum': 'Udyog Bhawan',
     'Rajghat': 'Delhi Gate',
     'Jama Masjid': 'Jama Masjid',
@@ -117,19 +123,35 @@ class AppConstants {
     'Purana Qila': 'Supreme Court',
     'Zoo': 'Supreme Court',
     'Lodhi Garden': 'Jor Bagh',
+    'Lodi Garden': 'Jor Bagh',
     'Jantar Mantar': 'Janpath',
   };
 
-  /// Resolves any landmark or station name to an authentic Metro station name
+  /// Resolves any landmark or station name to a Metro station name that the
+  /// route finder accepts.
+  ///
+  /// 1. exact landmark name (case-insensitive) → mapped station;
+  /// 2. a real station name is returned unchanged (so "Terminal 1-IGI Airport"
+  ///    is never hijacked by the "IGI Airport" landmark);
+  /// 3. a landmark contained in the input as whole words, longest first
+  ///    (e.g. "Red Fort, Old Delhi" → Lal Quila);
+  /// 4. otherwise the input itself (the route finder does fuzzy matching).
   static String resolveToMetroStation(String input) {
     final trimmed = input.trim();
-    if (landmarkToMetroStation.containsKey(trimmed)) {
-      return landmarkToMetroStation[trimmed]!;
-    }
+    final lower = trimmed.toLowerCase();
     for (final entry in landmarkToMetroStation.entries) {
-      if (trimmed.toLowerCase().contains(entry.key.toLowerCase())) {
-        return entry.value;
+      if (entry.key.toLowerCase() == lower) return entry.value;
+    }
+    for (final line in DelhiMetroNetwork.allLines) {
+      for (final station in line.stations) {
+        if (station.toLowerCase() == lower) return station;
       }
+    }
+    final keys = landmarkToMetroStation.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    for (final key in keys) {
+      final pattern = RegExp('(^|[^a-z0-9])${RegExp.escape(key.toLowerCase())}(\$|[^a-z0-9])');
+      if (pattern.hasMatch(lower)) return landmarkToMetroStation[key]!;
     }
     return trimmed;
   }
@@ -174,7 +196,6 @@ class DelhiMetroNetwork {
       interchanges: {
         'Samaypur Badli': ['Northern Railway'],
         'Azadpur': ['Pink Line'],
-        'Netaji Subhash Place': ['Red Line'],
         'Kashmere Gate': ['Red Line', 'Violet Line', 'ISBT Kashmere Gate'],
         'Chandni Chowk': ['Old Delhi Railway Station'],
         'New Delhi': ['Airport Express', 'New Delhi Railway Station'],
@@ -229,7 +250,7 @@ class DelhiMetroNetwork {
       code: 'BLUE',
       color: Color(0xFF1D4ED8),
       route: 'Dwarka Sector 21 ↔ Noida Electronic City / Vaishali',
-      stationCount: 58,
+      stationCount: 50,
       typicalHeadway: '2.5–4 min',
       operatingHours: '05:30 AM – 11:30 PM',
       interchanges: {
@@ -243,8 +264,7 @@ class DelhiMetroNetwork {
         'Yamuna Bank': ['Blue Line Branch (Vaishali)'],
         'Mayur Vihar-I': ['Pink Line'],
         'Botanical Garden': ['Magenta Line'],
-        'Noida Sector 51': ['Aqua Line (Noida Metro)'],
-        'Anand Vihar ISBT': ['Pink Line', 'Anand Vihar Railway Station'],
+        'Noida Sector 52': ['Aqua Line (Noida Sector 51, via walkway)'],
       },
       stations: [
         'Dwarka Sector 21',
@@ -437,7 +457,7 @@ class DelhiMetroNetwork {
         'Netaji Subhash Place': ['Red Line'],
         'Rajouri Garden': ['Blue Line'],
         'Durgabai Deshmukh South Campus': ['Airport Express via Dhaula Kuan'],
-        'Delhi Haat - INA': ['Yellow Line'],
+        'Dilli Haat - INA': ['Yellow Line'],
         'Lajpat Nagar': ['Violet Line'],
         'Mayur Vihar-I': ['Blue Line'],
         'Anand Vihar ISBT': ['Blue Line Branch', 'Railway Station'],
@@ -531,13 +551,13 @@ class DelhiMetroNetwork {
       code: 'GREEN',
       color: Color(0xFF16A34A),
       route: 'Inderlok / Kirti Nagar ↔ Brigadier Hoshiyar Singh (Bahadurgarh)',
-      stationCount: 24,
+      stationCount: 23,
       typicalHeadway: '5–8 min',
       operatingHours: '06:00 AM – 11:00 PM',
       interchanges: {
         'Inderlok': ['Red Line'],
         'Kirti Nagar': ['Blue Line'],
-        'Punjabi Bagh West': ['Pink Line'],
+        'Punjabi Bagh': ['Pink Line (Punjabi Bagh West, via skywalk)'],
       },
       stations: [
         'Inderlok',
@@ -545,7 +565,6 @@ class DelhiMetroNetwork {
         'Satguru Ram Singh Marg',
         'Ashok Park Main',
         'Punjabi Bagh',
-        'Punjabi Bagh West',
         'Shivaji Park',
         'Madipur',
         'Paschim Vihar East',

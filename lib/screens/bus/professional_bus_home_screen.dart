@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/bus_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/ui_kit.dart';
 import '../../utils/responsive_helper.dart';
+import 'bus_ui.dart';
 
 class ProfessionalBusHomeScreen extends StatefulWidget {
   const ProfessionalBusHomeScreen({super.key});
@@ -16,20 +21,46 @@ class ProfessionalBusHomeScreen extends StatefulWidget {
 }
 
 class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
-  static const _busGreen = Color(0xFF059669);
+  static const _busGreen = busGreen;
 
-  static const _popularRoutes = [
-    _BusRoute('Connaught Place', 'India Gate', '505', '~12 min'),
-    _BusRoute('Rajiv Chowk', 'Karol Bagh', '522', '~18 min'),
-    _BusRoute('Lajpat Nagar', 'South Extension', '534', '~10 min'),
-    _BusRoute('AIIMS', 'Saket', '544', '~15 min'),
-    _BusRoute('Nehru Place', 'Noida Sec-15', '543', '~25 min'),
-  ];
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  Timer? _debounce;
+  String _query = '';
+  bool _showAllPopular = false;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<BusProvider>().ensureLoaded();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  void _onQuery(String text) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) setState(() => _query = text.trim());
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() => _query = '');
+  }
 
   @override
   Widget build(BuildContext context) {
     final isTablet = ResponsiveHelper.isTablet(context);
     final p = context.palette;
+    final bus = context.watch<BusProvider>();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
@@ -47,10 +78,19 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, isTablet),
+              if (_query.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                _buildSearchResults(bus),
+                const SizedBox(height: 100),
+              ] else ...[
               const SizedBox(height: 22),
+              if (bus.hasError) ...[
+                BusNetworkStatusView(bus: bus),
+                const SizedBox(height: 10),
+              ],
               _buildPlanCard(context),
               const SizedBox(height: 16),
-              _buildNetworkStats(),
+              _buildNetworkStats(bus),
               const SizedBox(height: 26),
               const SectionHeader(
                 title: 'Quick actions',
@@ -68,15 +108,16 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
               const SizedBox(height: 26),
               SectionHeader(
                 title: 'Popular routes',
-                subtitle: 'Most travelled DTC corridors',
-                actionLabel: 'See all',
-                onAction: () => context.push('/bus/route-finder'),
+                subtitle: 'Busiest by scheduled trips per day',
+                actionLabel: bus.isReady ? (_showAllPopular ? 'Show less' : 'Show more') : null,
+                onAction: () => setState(() => _showAllPopular = !_showAllPopular),
               ),
               const SizedBox(height: 12),
-              _buildPopularRoutes(context),
+              _buildPopularRoutes(context, bus),
               const SizedBox(height: 26),
               _buildFareInfo(context),
               const SizedBox(height: 100),
+              ],
             ],
           ),
         ),
@@ -105,29 +146,142 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
             ),
       actions: [
         HeaderIconButton(
-          icon: Icons.search_rounded,
-          tooltip: 'Find Bus Route',
-          onTap: () => context.push('/bus/route-finder'),
+          icon: Icons.near_me_rounded,
+          tooltip: 'Bus stops near me',
+          onTap: () => context.push('/bus/stop-locator'),
         ),
       ],
+      bottom: _buildSearchBar(),
     );
   }
 
-  Widget _buildNetworkStats() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 16, offset: const Offset(0, 6))],
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        onChanged: _onQuery,
+        textInputAction: TextInputAction.search,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+        cursorColor: _busGreen,
+        decoration: InputDecoration(
+          hintText: 'Route number or stop, e.g. 534 or Nehru Place',
+          hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textTertiary),
+          prefixIcon: const Icon(Icons.search_rounded, color: _busGreen),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear',
+                  icon: const Icon(Icons.close_rounded, color: AppTheme.textTertiary, size: 20),
+                  onPressed: _clearSearch,
+                ),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+        ),
+      ),
+    );
+  }
+
+  // ── Search results ────────────────────────────────────────────────────────
+
+  Widget _buildSearchResults(BusProvider bus) {
+    final p = context.palette;
+    if (!bus.isReady) return BusNetworkStatusView(bus: bus);
+    final results = bus.search(_query);
+    if (results.isEmpty) {
+      return EmptyState(
+        title: 'Nothing matches "$_query"',
+        message: 'Try a route number like 534 or part of a stop name like "Kashmere".',
+      );
+    }
+    Widget label(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: p.textTertiary, letterSpacing: 0.8),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (results.routes.isNotEmpty)
+            AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  label('ROUTES'),
+                  for (final r in results.routes)
+                    InkWell(
+                      onTap: () => context.push(routePath(r.line)),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+                        child: Row(
+                          children: [
+                            BusNumberBadge(r.number),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                r.termini,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.textPrimary),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: p.textTertiary),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          if (results.places.isNotEmpty)
+            AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  label('STOPS'),
+                  for (final place in results.places)
+                    BusPlaceTile(place: place, onTap: () => context.push(stopPath(place.stops.first.id))),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetworkStats(BusProvider bus) {
+    String v(int Function() f) => bus.isReady ? formatCount(f()) : '…';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           Expanded(
-            child: StatTile(value: '650+', label: 'Routes', icon: Icons.route_rounded, color: _busGreen),
+            child: StatTile(value: v(() => bus.routeCount), label: 'Routes', icon: Icons.route_rounded, color: _busGreen),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
-            child: StatTile(value: '6,500+', label: 'Buses', icon: Icons.directions_bus_rounded, color: AppTheme.metroBlue),
+            child: StatTile(value: v(() => bus.stopCount), label: 'Bus stops', icon: Icons.place_rounded, color: AppTheme.metroBlue),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
-            child: StatTile(value: '4.2M', label: 'Daily riders', icon: Icons.people_alt_rounded, color: AppTheme.accentColor),
+            child: StatTile(
+                value: v(() => bus.dailyTrips), label: 'Trips / day', icon: Icons.directions_bus_rounded, color: AppTheme.accentColor),
           ),
         ],
       ),
@@ -163,7 +317,7 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Find direct DTC & cluster routes',
+                        'Direct & one-change DTC and cluster buses',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 12.5, color: p.textTertiary),
@@ -202,7 +356,7 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _actionCard('Live Tracking', 'Buses on map', Icons.radar_rounded,
+                child: _actionCard('Live Buses', 'GPS tracking', Icons.radar_rounded,
                     _busGreen, () => context.push('/bus/realtime')),
               ),
             ],
@@ -263,6 +417,10 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
   // ── Bus types ─────────────────────────────────────────────────────────────
 
   Widget _buildBusTypes(BuildContext context) {
+    final bus = context.read<BusProvider>();
+    final dtcRoutes = bus.isReady ? '\n• ${bus.routeCountForAgency('DTC')} DTC route numbers in the timetable' : '';
+    final clusterRoutes =
+        bus.isReady ? '\n• ${bus.routeCountForAgency('DIMTS')} cluster route numbers in the timetable' : '';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -274,11 +432,11 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                     Icons.directions_bus_rounded, AppTheme.metroBlue,
                     () => _showBusTypeInfo(context, 'DTC Buses',
                         'Delhi Transport Corporation is the primary public bus operator in Delhi.\n\n'
-                        '• Fleet: 3,500+ buses\n'
-                        '• Routes: 400+\n'
                         '• Low-floor buses for accessibility\n'
                         '• Passes available monthly & quarterly\n'
-                        '• Fare: ₹5 to ₹25 based on distance', AppTheme.metroBlue)),
+                        '• Fare: ₹5–15 non-AC, ₹10–25 AC, by distance\n'
+                        '• Women ride free with a pink ticket'
+                        '$dtcRoutes', AppTheme.metroBlue)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -286,11 +444,11 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                     Icons.directions_bus_filled_rounded, _busGreen,
                     () => _showBusTypeInfo(context, 'Cluster Buses',
                         'Cluster buses are operated by private companies under Delhi government.\n\n'
-                        '• Fleet: 3,000+ buses\n'
-                        '• Complements DTC routes\n'
+                        '• Managed by DIMTS, complements DTC routes\n'
                         '• Air conditioned options available\n'
-                        '• Electronic ticketing system\n'
-                        '• Fare: ₹5 to ₹25', _busGreen)),
+                        '• Fare: ₹5–15 non-AC, ₹10–25 AC, by distance\n'
+                        '• Women ride free with a pink ticket'
+                        '$clusterRoutes', _busGreen)),
               ),
             ],
           ),
@@ -306,7 +464,7 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                         '• GPS tracked\n'
                         '• Electronic display inside\n'
                         '• Available on major routes\n'
-                        '• Fare: ₹10 to ₹50', AppTheme.infoColor)),
+                        '• Fare: ₹10 up to 4 km, ₹15 up to 8 km, ₹20 up to 12 km, ₹25 beyond', AppTheme.infoColor)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -314,11 +472,10 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                     Icons.electric_bolt_rounded, AppTheme.metroOrange,
                     () => _showBusTypeInfo(context, 'Electric Buses',
                         'Delhi\'s green initiative — 100% electric fleet.\n\n'
-                        '• Zero emissions\n'
-                        '• 300+ e-buses operational\n'
+                        '• Zero tailpipe emissions\n'
                         '• Quieter & smoother ride\n'
-                        '• Same fare as regular DTC\n'
-                        '• Expanding across all routes', AppTheme.metroOrange)),
+                        '• Air conditioned — AC fares apply (₹10–25)\n'
+                        '• Run by DTC and cluster operators', AppTheme.metroOrange)),
               ),
             ],
           ),
@@ -364,21 +521,26 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
 
   // ── Popular routes ────────────────────────────────────────────────────────
 
-  Widget _buildPopularRoutes(BuildContext context) {
+  Widget _buildPopularRoutes(BuildContext context, BusProvider bus) {
+    if (!bus.isReady) {
+      return bus.hasError ? const SizedBox.shrink() : const BusLoadingView(message: 'Loading routes…');
+    }
+    final routes = bus.popularRoutes(limit: _showAllPopular ? 12 : 5);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: _popularRoutes.map((r) => _routeCard(r, context)).toList(),
+        children: routes.map((r) => _routeCard(r, context)).toList(),
       ),
     );
   }
 
-  Widget _routeCard(_BusRoute route, BuildContext context) {
+  Widget _routeCard(BusRouteSummary route, BuildContext context) {
     final p = context.palette;
+    final freq = route.headwayMinutes == null ? '' : 'Every ~${route.headwayMinutes} min · ';
     return AppCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      onTap: () => context.push('/bus/route-finder'),
+      onTap: () => context.push(routePath(route.line)),
       child: Row(
         children: [
           Container(
@@ -392,8 +554,10 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
             child: Center(
               child: Text(
                 route.number,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
@@ -406,8 +570,8 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${route.from} → ${route.to}',
-                  maxLines: 1,
+                  route.termini,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: p.textPrimary),
                 ),
@@ -418,7 +582,7 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        'Route ${route.number} · ${route.time}',
+                        '$freq${route.dailyTrips} trips/day',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11.5, color: p.textTertiary),
@@ -467,21 +631,22 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _fareChip('Regular', '₹5–25', _busGreen)),
+                Expanded(child: _fareChip('Non-AC', '₹5–15', _busGreen)),
                 const SizedBox(width: 8),
-                Expanded(child: _fareChip('AC Bus', '₹10–50', AppTheme.infoColor)),
+                Expanded(child: _fareChip('AC / Electric', '₹10–25', AppTheme.infoColor)),
                 const SizedBox(width: 8),
-                Expanded(child: _fareChip('Electric', '₹5–25', AppTheme.metroOrange)),
+                Expanded(child: _fareChip('Women', 'Free', pinkTicket)),
               ],
             ),
             const SizedBox(height: 14),
             Divider(height: 1, color: p.border),
             const SizedBox(height: 12),
-            _infoRow(Icons.calendar_today_rounded, 'Day pass: ₹50 (unlimited travel)', AppTheme.primaryColor),
+            _infoRow(Icons.straighten_rounded, 'Non-AC: ₹5 up to 4 km, ₹10 up to 10 km, ₹15 beyond', AppTheme.primaryColor),
             const SizedBox(height: 8),
-            _infoRow(Icons.people_alt_rounded, 'Women & seniors: concessional fares', AppTheme.brandViolet),
+            _infoRow(Icons.ac_unit_rounded, 'AC: ₹10 up to 4 km, ₹15 up to 8 km, ₹20 up to 12 km, ₹25 beyond',
+                AppTheme.infoColor),
             const SizedBox(height: 8),
-            _infoRow(Icons.school_rounded, 'Student pass: ₹200/month', AppTheme.accentColor),
+            _infoRow(Icons.confirmation_number_rounded, 'Women ride free on DTC & cluster buses (pink ticket)', pinkTicket),
           ],
         ),
       ),
@@ -581,12 +746,4 @@ class _ProfessionalBusHomeScreenState extends State<ProfessionalBusHomeScreen> {
       },
     );
   }
-}
-
-class _BusRoute {
-  final String from;
-  final String to;
-  final String number;
-  final String time;
-  const _BusRoute(this.from, this.to, this.number, this.time);
 }

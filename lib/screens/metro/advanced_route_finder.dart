@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../services/map_service.dart';
 import '../../models/metro_line.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/responsive_helper.dart';
-import '../../providers/location_provider.dart';
 
 class AdvancedRouteFinder extends StatefulWidget {
   const AdvancedRouteFinder({super.key});
@@ -95,8 +93,6 @@ class _AdvancedRouteFinderState extends State<AdvancedRouteFinder> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = ResponsiveHelper.isTablet(context);
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Metro Route Finder'),

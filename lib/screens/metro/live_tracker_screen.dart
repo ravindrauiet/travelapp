@@ -96,8 +96,10 @@ class _LiveTrackerScreenState extends State<LiveTrackerScreen>
     switch (tracker.state) {
       case TrackerState.idle:
         dot = Colors.white.withValues(alpha: 0.6);
-        label = 'Tracking stopped — tap Start to begin';
-        icon = Icons.gps_off_rounded;
+        label = tracker.journeyComplete && tracker.trackedStops.isNotEmpty
+            ? 'Arrived at ${tracker.trackedStops.last.name} — GPS turned off'
+            : 'Tracking stopped — tap Start to begin';
+        icon = tracker.journeyComplete ? Icons.flag_rounded : Icons.gps_off_rounded;
       case TrackerState.loading:
         dot = const Color(0xFFFFB547);
         label = 'Loading station data…';
@@ -151,6 +153,22 @@ class _LiveTrackerScreenState extends State<LiveTrackerScreen>
               style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
+          if (tracker.state == TrackerState.error && tracker.canFixInSettings)
+            GestureDetector(
+              onTap: tracker.openSettings,
+              child: Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Settings',
+                  style: TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
           if (tracker.state == TrackerState.error)
             GestureDetector(
               onTap: tracker.clearError,
@@ -261,6 +279,9 @@ class _SegmentedTab extends StatelessWidget {
     );
   }
 }
+
+String _formatDistance(double metres) =>
+    metres < 1000 ? '${metres.round()} m' : '${(metres / 1000).toStringAsFixed(1)} km';
 
 // ── Tracking Toggle Button ────────────────────────────────────────────────────
 
@@ -445,7 +466,7 @@ class _MetroMapWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    tracker.isTracking ? 'LIVE FEED' : 'GPS OFF',
+                    tracker.isTracking ? 'GPS ON' : 'GPS OFF',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -537,7 +558,7 @@ class _MetroMapWidget extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     tracker.nearby.isNotEmpty
-                        ? 'Next: ${tracker.nearby.first.station.line}'
+                        ? '${tracker.nearby.first.station.line} · ${_formatDistance(tracker.nearby.first.distanceMetres)} away'
                         : (tracker.isTracking
                             ? 'Searching for nearest metro station…'
                             : 'GPS off — Tap Start to detect nearest station'),
@@ -829,6 +850,13 @@ class _CurrentTripCard extends StatelessWidget {
     final from = stops.isNotEmpty ? stops.first.name : '';
     final to = stops.isNotEmpty ? stops.last.name : '';
     final remaining = tracker.remainingStops;
+    final lineColors = <String>[];
+    for (final s in stops) {
+      if (!lineColors.contains(s.lineColor)) lineColors.add(s.lineColor);
+    }
+    final status = tracker.journeyComplete
+        ? 'Arrived'
+        : (tracker.isTracking ? '$remaining stop${remaining == 1 ? '' : 's'} left' : 'GPS off');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -872,10 +900,9 @@ class _CurrentTripCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Line color bubbles
-              const _LineBubble(color: AppTheme.successColor),
-              _LineBubble(color: AppTheme.metroBlue.withValues(alpha: 0.85)),
-              if (remaining > 0)
+              // Line colour bubbles (one per line on the route)
+              for (final c in lineColors.take(3)) _LineBubble(color: _parseHex(c)),
+              if (remaining > 0 && !tracker.journeyComplete)
                 Container(
                   width: 30,
                   height: 30,
@@ -896,21 +923,22 @@ class _CurrentTripCard extends StatelessWidget {
                   ),
                 ),
               const Spacer(),
-              // On Time badge
+              // Trip status (no live train data — progress comes from GPS)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: AppTheme.sunsetGradient,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.bolt_rounded, color: Colors.white, size: 14),
-                    SizedBox(width: 4),
+                    Icon(tracker.journeyComplete ? Icons.flag_rounded : Icons.my_location_rounded,
+                        color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
                     Text(
-                      'On Time',
-                      style: TextStyle(
+                      status,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -999,6 +1027,11 @@ class _RouteFollowerTab extends StatelessWidget {
                   ],
                 ),
               ),
+            )
+          else if (tracker.routeError != null && !tracker.hasRoute)
+            _IdlePrompt(
+              title: 'Couldn\'t load route',
+              subtitle: tracker.routeError!,
             )
           else if (tracker.hasRoute)
             _RouteTimeline(tracker: tracker)
@@ -1206,6 +1239,36 @@ class _RouteTimeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (tracker.journeyComplete || !tracker.isTracking) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: p.tint(tracker.journeyComplete ? AppTheme.successColor : AppTheme.warningColor),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  tracker.journeyComplete ? Icons.flag_rounded : Icons.info_outline_rounded,
+                  size: 16,
+                  color: tracker.journeyComplete ? AppTheme.successColor : AppTheme.warningColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tracker.journeyComplete
+                        ? 'You have arrived at ${stops.last.name}. GPS tracking was turned off automatically.'
+                        : 'GPS is off — tap Start (top-right) so stations are ticked off as you travel. '
+                            'Alerts keep working in the background.',
+                    style: TextStyle(fontSize: 12, color: p.textSecondary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         // Progress summary
         AppCard(
           radius: 22,

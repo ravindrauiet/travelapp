@@ -234,28 +234,11 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
             : null,
         boxShadow: color != null ? [
           BoxShadow(
-            color: color!.withOpacity(0.3),
+            color: color.withOpacity(0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ] : null,
-      ),
-    );
-  }
-
-  Widget _buildSidePanel() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildScoreBoard(),
-          const SizedBox(height: 20),
-          _buildNextPiece(),
-          const SizedBox(height: 20),
-          _buildControls(),
-          const Spacer(),
-          _buildGameStatus(),
-        ],
       ),
     );
   }
@@ -281,92 +264,6 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
         GameStat('Level', _game.level.toString(), Icons.trending_up_rounded),
         GameStat('Lines', _game.linesCleared.toString(), Icons.view_headline_rounded),
       ],
-    );
-  }
-
-  Widget _buildScoreItem(String label, String value, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNextPiece() {
-    final p = context.palette;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: p.border),
-        boxShadow: p.shadow,
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Next Piece',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: p.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (_game.nextPiece != null)
-            _buildPiecePreview(_game.nextPiece!)
-          else
-            const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPiecePreview(TetrisPiece piece) {
-    return Container(
-      width: 60,
-      height: 60,
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          childAspectRatio: 1,
-        ),
-        itemCount: 16,
-        itemBuilder: (context, index) {
-          final x = index % 4;
-          final y = index ~/ 4;
-          
-          if (y < piece.shape.length && x < piece.shape[y].length && piece.shape[y][x] == 1) {
-            return Container(
-              margin: const EdgeInsets.all(0.5),
-              decoration: BoxDecoration(
-                color: piece.color,
-                borderRadius: BorderRadius.circular(2),
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
-              ),
-            );
-          }
-          
-          return Container();
-        },
-      ),
     );
   }
 
@@ -415,32 +312,6 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
       icon: icon,
       onPressed: onPressed,
       gradient: gradient,
-    );
-  }
-
-  Widget _buildControlRow(String key, String action) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            key,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.metroBlue,
-            ),
-          ),
-          Text(
-            action,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -1,3 +1,5 @@
+// Developer-only diagnostics for the OTD feed. Not registered in the router and
+// not linked from any user-facing screen; open it manually during development.
 import 'package:flutter/material.dart';
 import '../../services/gtfs_service.dart';
 import '../../models/gtfs_models.dart';
@@ -12,7 +14,7 @@ class ApiTestScreen extends StatefulWidget {
 
 class _ApiTestScreenState extends State<ApiTestScreen> {
   String _status = 'Ready to test API';
-  List<String> _logs = [];
+  final List<String> _logs = [];
   List<GTFSVehiclePosition> _vehicles = [];
   List<GTFSRoute> _routes = [];
   List<GTFSStop> _stops = [];
@@ -21,7 +23,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     setState(() {
       _logs.add('${DateTime.now().toString().substring(11, 19)}: $message');
     });
-    print(message);
+    debugPrint(message);
   }
 
   Future<void> _testRealTimeAPI() async {
@@ -105,7 +107,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.infoColor.withOpacity(0.1),
+                color: AppTheme.infoColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppTheme.infoColor),
               ),

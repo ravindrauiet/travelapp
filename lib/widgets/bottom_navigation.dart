@@ -151,7 +151,13 @@ class _NavButton extends StatelessWidget {
                 color: isSelected ? item.color : context.palette.textTertiary,
                 letterSpacing: isSelected ? 0.2 : 0,
               ),
-              child: Text(item.label),
+              // Clamp scaling so large accessibility text cannot overflow the 64px bar.
+              child: Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.15),
+              ),
             ),
           ],
         ),

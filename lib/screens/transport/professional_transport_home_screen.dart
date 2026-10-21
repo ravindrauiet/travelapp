@@ -112,7 +112,7 @@ class _ProfessionalTransportHomeScreenState
           Expanded(
             child: StatTile(
               value: '1 Lakh+',
-              label: 'Auto Rickshaws',
+              label: 'Autos',
               icon: Icons.electric_rickshaw_rounded,
               color: _saffron,
             ),
@@ -130,7 +130,7 @@ class _ProfessionalTransportHomeScreenState
           Expanded(
             child: StatTile(
               value: 'Active',
-              label: 'E-Bikes / Taxis',
+              label: 'Bike Taxis',
               icon: Icons.electric_bike_rounded,
               color: AppTheme.successColor,
             ),

@@ -19,14 +19,19 @@ class NearbyStation {
     required this.walkMinutes,
   });
 
-  /// < 100 m — you are here
-  bool get isArrived => distanceMetres < 100;
+  /// Within [StationTrackerService.arrivalRadius] — you are at the station.
+  bool get isArrived => distanceMetres < StationTrackerService.arrivalRadius;
 
-  /// 100–300 m — approaching
-  bool get isApproaching => distanceMetres >= 100 && distanceMetres < 300;
+  /// Between arrival radius and [StationTrackerService.approachRadius].
+  bool get isApproaching =>
+      distanceMetres >= StationTrackerService.arrivalRadius &&
+      distanceMetres < StationTrackerService.approachRadius;
 }
 
 enum TrackerState { idle, loading, active, error }
+
+/// Why tracking could not start / stopped.
+enum TrackerIssue { serviceOff, permissionDenied, permissionBlocked, noData, streamFailed }
 
 // ── Route follower stop ───────────────────────────────────────────────────────
 
@@ -34,10 +39,16 @@ class TrackedStop {
   final String name;
   final String line;
   final String lineColor;
-  double? latitude;   // mutable — filled in after route load
+  double? latitude; // filled in after route load
   double? longitude;
   bool passed;
   bool isCurrent;
+
+  /// True when the rider changes line at this stop.
+  bool isInterchange;
+
+  /// Line to change to at this stop (when [isInterchange]).
+  String? changeTo;
 
   TrackedStop({
     required this.name,
@@ -47,27 +58,52 @@ class TrackedStop {
     this.longitude,
     this.passed = false,
     this.isCurrent = false,
+    this.isInterchange = false,
+    this.changeTo,
   });
 }
 
 // ── Main service ──────────────────────────────────────────────────────────────
 
+/// GPS station proximity alerts and "follow my route" progress.
+///
+/// * Nearby mode: alerts once when approaching (< [approachRadius]) and once
+///   when arriving (< [arrivalRadius]) at a station (10 min cool-down each).
+/// * Route mode: ticks off stops as the phone passes within
+///   [stopPassRadius]; notifies on interchanges, one stop before the
+///   destination, and on arrival — then stops GPS automatically.
+/// * On Android tracking keeps running in the background through a
+///   foreground-service notification (geolocator).
+/// Note: GPS is unreliable in underground sections, so progress may jump
+/// several stops at once when the signal returns — that is expected.
 class StationTrackerService extends ChangeNotifier {
+  static const double arrivalRadius = 120;
+  static const double approachRadius = 400;
+  static const double stopPassRadius = 250;
+
+  /// Fixes worse than this are ignored for route progress.
+  static const double maxUsableAccuracy = 300;
+  static const Duration notifyCooldown = Duration(minutes: 10);
+
   // ── State ──────────────────────────────────────────────────────────────────
   TrackerState _state = TrackerState.idle;
   String? _error;
+  TrackerIssue? _issue;
   Position? _position;
   List<NearbyStation> _nearby = [];
   List<MetroStation> _allStations = [];
 
   // Route follower
   List<TrackedStop> _trackedStops = [];
-  int _currentStopIndex = -1; // index of current stop (-1 = not started)
+  int _currentStopIndex = -1;
   String? _routeFrom;
   String? _routeTo;
   bool _loadingRoute = false;
+  String? _routeError;
+  bool _journeyComplete = false;
+  bool _destinationNextNotified = false;
 
-  // Notification cooldown: stationId → time last notified
+  // Notification cooldown: key → time last notified
   final Map<String, DateTime> _notifiedAt = {};
 
   StreamSubscription<Position>? _positionSub;
@@ -75,6 +111,7 @@ class StationTrackerService extends ChangeNotifier {
   // ── Getters ────────────────────────────────────────────────────────────────
   TrackerState get state => _state;
   String? get error => _error;
+  TrackerIssue? get issue => _issue;
   Position? get position => _position;
   List<NearbyStation> get nearby => _nearby;
   NearbyStation? get nearest => _nearby.isNotEmpty ? _nearby.first : null;
@@ -85,6 +122,16 @@ class StationTrackerService extends ChangeNotifier {
   String? get routeFrom => _routeFrom;
   String? get routeTo => _routeTo;
   bool get loadingRoute => _loadingRoute;
+
+  /// Message when the last [loadRoute] failed.
+  String? get routeError => _routeError;
+
+  /// True once the destination of the followed route has been reached.
+  bool get journeyComplete => _journeyComplete;
+
+  /// Whether opening system settings can fix [issue].
+  bool get canFixInSettings =>
+      _issue == TrackerIssue.serviceOff || _issue == TrackerIssue.permissionBlocked;
 
   /// How many stops have been passed (including current).
   int get passedCount => _currentStopIndex < 0 ? 0 : _currentStopIndex + 1;
@@ -98,10 +145,11 @@ class StationTrackerService extends ChangeNotifier {
   // ── Tracking control ───────────────────────────────────────────────────────
 
   Future<void> startTracking() async {
-    if (_state == TrackerState.active) return;
+    if (_state == TrackerState.active || _state == TrackerState.loading) return;
 
     _state = TrackerState.loading;
     _error = null;
+    _issue = null;
     notifyListeners();
 
     // 1. Load stations once
@@ -109,59 +157,95 @@ class StationTrackerService extends ChangeNotifier {
       try {
         _allStations = await GTFSGraphService.getStations();
       } catch (e) {
-        _setError('Could not load station data: $e');
+        _setError(TrackerIssue.noData, 'Could not load station data. Please try again.');
         return;
       }
     }
     if (_allStations.isEmpty) {
-      _setError('No station data available');
+      _setError(TrackerIssue.noData, 'No station data available.');
       return;
     }
 
     // 2. Check / request location permission
-    bool serviceOn = await Geolocator.isLocationServiceEnabled();
-    if (!serviceOn) {
-      _setError('Location services are disabled.\nPlease enable GPS.');
+    try {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) {
+        _setError(TrackerIssue.serviceOff, 'Location (GPS) is turned off. Turn it on to track stations.');
+        return;
+      }
+
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever) {
+        _setError(TrackerIssue.permissionBlocked,
+            'Location access is blocked for Metromate. Allow it in Settings to use the tracker.');
+        return;
+      }
+      if (perm == LocationPermission.denied || perm == LocationPermission.unableToDetermine) {
+        _setError(TrackerIssue.permissionDenied,
+            'Location permission is needed to find stations near you. Tap Start to ask again.');
+        return;
+      }
+    } catch (e) {
+      _setError(TrackerIssue.streamFailed, 'Location is not available on this device.');
       return;
     }
 
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      _setError('Location permission denied.\nGo to Settings → App → Location.');
-      return;
-    }
-
-    // 3. Request notification permission (non-blocking)
+    // 3. Notification permission (alerts are optional; tracking works without)
     await NotificationService.requestPermission();
 
-    // 4. Get initial position, then stream
+    // 4. Initial fix, then stream
     try {
       _position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
       );
-      _recalculate(_position!);
     } catch (_) {
-      // Non-fatal — stream will fill position shortly
+      // Non-fatal — the stream will deliver a fix shortly.
     }
 
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 20, // fire when user moves ≥20 m
-      ),
-    ).listen(
+    _positionSub = Geolocator.getPositionStream(locationSettings: _locationSettings()).listen(
       _onPosition,
-      onError: (e) => _setError('Location stream error: $e'),
+      onError: (Object e) {
+        _positionSub?.cancel();
+        _positionSub = null;
+        if (e is LocationServiceDisabledException) {
+          _setError(TrackerIssue.serviceOff, 'Location (GPS) was turned off. Turn it on and tap Start.');
+        } else if (e is PermissionDeniedException) {
+          _setError(TrackerIssue.permissionBlocked, 'Location permission was revoked. Allow it in Settings.');
+        } else {
+          _setError(TrackerIssue.streamFailed, 'Lost the GPS signal. Tap Start to try again.');
+        }
+      },
     );
 
     _state = TrackerState.active;
+    if (_position != null) _recalculate(_position!);
     notifyListeners();
   }
 
+  LocationSettings _locationSettings() {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 20,
+        intervalDuration: const Duration(seconds: 5),
+        // Keeps GPS updates (and alerts) flowing while the app is in the
+        // background; shows a persistent notification while tracking.
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: 'Metromate is tracking your metro trip',
+          notificationText: 'Station alerts are on. Open the app and tap Stop to end.',
+          notificationChannelName: 'Station tracking',
+          enableWakeLock: true,
+        ),
+      );
+    }
+    return const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 20);
+  }
+
+  /// Stops GPS. Route progress is kept so the timeline stays visible.
   void stopTracking() {
     _positionSub?.cancel();
     _positionSub = null;
@@ -175,8 +259,22 @@ class StationTrackerService extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    _issue = null;
     _state = TrackerState.idle;
     notifyListeners();
+  }
+
+  /// Opens the system page that fixes the current [issue].
+  Future<void> openSettings() async {
+    try {
+      if (_issue == TrackerIssue.serviceOff) {
+        await Geolocator.openLocationSettings();
+      } else {
+        await Geolocator.openAppSettings();
+      }
+    } catch (e) {
+      debugPrint('StationTrackerService.openSettings: $e');
+    }
   }
 
   // ── Route follower ─────────────────────────────────────────────────────────
@@ -186,35 +284,51 @@ class StationTrackerService extends ChangeNotifier {
     _loadingRoute = true;
     _routeFrom = fromName;
     _routeTo = toName;
+    _routeError = null;
     _trackedStops = [];
     _currentStopIndex = -1;
+    _journeyComplete = false;
+    _destinationNextNotified = false;
     notifyListeners();
 
     try {
-      final routes = await GTFSGraphService.findRoute(
-        fromName: fromName,
-        toName: toName,
-        travelTime: DateTime.now(),
-        isSmartCard: true,
-      );
-
-      if (routes.isEmpty) {
-        _loadingRoute = false;
-        notifyListeners();
-        return;
+      if (fromName.trim().toLowerCase() == toName.trim().toLowerCase()) {
+        _routeError = 'Starting and destination station are the same.';
+      } else {
+        final routes = await GTFSGraphService.findRoute(
+          fromName: fromName,
+          toName: toName,
+          travelTime: DateTime.now(),
+          isSmartCard: false,
+        );
+        if (routes.isEmpty) {
+          _routeError = 'No metro route found between $fromName and $toName.';
+        } else {
+          if (_allStations.isEmpty) _allStations = await GTFSGraphService.getStations();
+          setRoute(routes.first);
+          if (_position != null) _advanceRoute(_position!);
+        }
       }
-
-      _trackedStops = _buildTrackedStops(routes.first);
-      _currentStopIndex = -1;
-
-      // Map station names → coordinates
-      _enrichStopCoords();
+    } on StationNotFoundException catch (e) {
+      _routeError = 'Unknown station: ${e.name}';
     } catch (e) {
       debugPrint('StationTrackerService.loadRoute error: $e');
+      _routeError = 'Could not build the route. Please try again.';
     }
 
     _loadingRoute = false;
     notifyListeners();
+  }
+
+  /// Uses [route] as the followed route (also used by tests).
+  @visibleForTesting
+  void setRoute(MetroRoute route, {List<MetroStation>? stations}) {
+    if (stations != null) _allStations = stations;
+    _trackedStops = _buildTrackedStops(route);
+    _currentStopIndex = -1;
+    _journeyComplete = false;
+    _destinationNextNotified = false;
+    _enrichStopCoords();
   }
 
   void clearRoute() {
@@ -222,133 +336,157 @@ class StationTrackerService extends ChangeNotifier {
     _currentStopIndex = -1;
     _routeFrom = null;
     _routeTo = null;
+    _routeError = null;
+    _journeyComplete = false;
     notifyListeners();
   }
 
-  // ── Private helpers ────────────────────────────────────────────────────────
+  // ── Position handling ──────────────────────────────────────────────────────
 
   void _onPosition(Position pos) {
     _position = pos;
     _recalculate(pos);
   }
 
+  /// Feed a position fix (exposed for tests).
+  @visibleForTesting
+  void handlePosition(Position pos) => _onPosition(pos);
+
   void _recalculate(Position pos) {
     if (_allStations.isEmpty) return;
 
-    // Build sorted nearby list
     final list = _allStations.map((s) {
-      final d = Geolocator.distanceBetween(
-          pos.latitude, pos.longitude, s.latitude, s.longitude);
-      return NearbyStation(
-        station: s,
-        distanceMetres: d,
-        walkMinutes: (d / 80).ceil(),
-      );
+      final d = Geolocator.distanceBetween(pos.latitude, pos.longitude, s.latitude, s.longitude);
+      return NearbyStation(station: s, distanceMetres: d, walkMinutes: (d / 80).ceil());
     }).toList()
       ..sort((a, b) => a.distanceMetres.compareTo(b.distanceMetres));
 
     _nearby = list.take(15).toList();
 
-    // Fire notifications
-    _maybeNotify();
-
-    // Advance route follower
-    if (_trackedStops.isNotEmpty) {
+    if (_trackedStops.isNotEmpty && !_journeyComplete) {
       _advanceRoute(pos);
+    } else if (_trackedStops.isEmpty) {
+      // Station proximity alerts only when not following a route (while
+      // riding, every station passed would otherwise trigger an alert).
+      _maybeNotifyNearby();
     }
 
     notifyListeners();
   }
 
-  void _maybeNotify() {
+  bool _cooledDown(String key) {
+    final last = _notifiedAt[key];
+    return last == null || DateTime.now().difference(last) >= notifyCooldown;
+  }
+
+  void _maybeNotifyNearby() {
     if (_nearby.isEmpty) return;
     final top = _nearby.first;
     final id = top.station.id;
-    final now = DateTime.now();
-
-    // Cooldown: don't re-notify same station within 3 minutes
-    final lastTime = _notifiedAt[id];
-    if (lastTime != null && now.difference(lastTime).inMinutes < 3) return;
 
     if (top.isArrived) {
-      NotificationService.showArrivedAtStation(top.station.name);
-      _notifiedAt[id] = now;
+      if (_cooledDown('arrive_$id')) {
+        NotificationService.showArrivedAtStation(top.station.name);
+        _notifiedAt['arrive_$id'] = DateTime.now();
+        _notifiedAt['approach_$id'] = DateTime.now(); // no "approaching" after arriving
+      }
     } else if (top.isApproaching) {
-      NotificationService.showApproachingStation(
-          top.station.name, top.distanceMetres.round());
-      _notifiedAt['${id}_approach'] = now;
+      if (_cooledDown('approach_$id')) {
+        NotificationService.showApproachingStation(top.station.name, top.distanceMetres.round());
+        _notifiedAt['approach_$id'] = DateTime.now();
+      }
     }
   }
 
   void _advanceRoute(Position pos) {
-    // Scan from currentStopIndex+1 forward to find if user reached next stop
-    final startFrom = (_currentStopIndex + 1).clamp(0, _trackedStops.length - 1);
+    if (_trackedStops.isEmpty || _journeyComplete) return;
+    if (pos.accuracy > maxUsableAccuracy) return; // too vague to tick off stops
 
+    // Closest stop ahead (never go backwards).
+    final startFrom = _currentStopIndex + 1;
+    int? hit;
+    double best = double.infinity;
     for (int i = startFrom; i < _trackedStops.length; i++) {
       final stop = _trackedStops[i];
       if (stop.latitude == null || stop.longitude == null) continue;
-
-      final d = Geolocator.distanceBetween(
-          pos.latitude, pos.longitude, stop.latitude!, stop.longitude!);
-
-      if (d < 200) {
-        // Mark everything up to (and including) i as passed
-        for (int j = 0; j <= i; j++) {
-          _trackedStops[j].passed = true;
-          _trackedStops[j].isCurrent = false;
-        }
-        _trackedStops[i].isCurrent = true;
-
-        if (i > _currentStopIndex) {
-          _currentStopIndex = i;
-
-          // Show route progress notification
-          final next = i + 1 < _trackedStops.length
-              ? _trackedStops[i + 1].name
-              : 'Destination';
-          NotificationService.showRouteProgress(
-            currentStation: stop.name,
-            nextStation: next,
-            remainingStations: remainingStops,
-          );
-        }
-        break;
+      final d = Geolocator.distanceBetween(pos.latitude, pos.longitude, stop.latitude!, stop.longitude!);
+      if (d < stopPassRadius && d < best) {
+        best = d;
+        hit = i;
       }
+    }
+    if (hit == null) return;
+
+    for (int j = 0; j <= hit; j++) {
+      _trackedStops[j].passed = true;
+      _trackedStops[j].isCurrent = false;
+    }
+    _trackedStops[hit].isCurrent = true;
+    _currentStopIndex = hit;
+    final stop = _trackedStops[hit];
+    final last = _trackedStops.length - 1;
+
+    if (hit == last) {
+      _journeyComplete = true;
+      NotificationService.showDestinationReached(stop.name);
+      // Destination reached — stop GPS to save battery, keep the timeline.
+      _positionSub?.cancel();
+      _positionSub = null;
+      _state = TrackerState.idle;
+      return;
+    }
+
+    if (stop.isInterchange && stop.changeTo != null) {
+      NotificationService.showInterchangeAlert(stop.name, stop.changeTo!);
+    } else if (hit == last - 1 && !_destinationNextNotified) {
+      _destinationNextNotified = true;
+      NotificationService.showDestinationNext(_trackedStops[last].name);
+    } else {
+      NotificationService.showRouteProgress(
+        currentStation: stop.name,
+        nextStation: _trackedStops[hit + 1].name,
+        remainingStations: remainingStops,
+      );
     }
   }
 
   List<TrackedStop> _buildTrackedStops(MetroRoute route) {
     final stops = <TrackedStop>[];
-    for (final seg in route.segments) {
-      // First station of segment (skip if duplicate from previous segment)
+    final segs = route.segments;
+    for (int s = 0; s < segs.length; s++) {
+      final seg = segs[s];
+      final isWalk = seg.line == GTFSGraphService.walkLine;
+      if (isWalk) {
+        // Mark the stop before the walk as the change point.
+        if (stops.isNotEmpty) {
+          final next = s + 1 < segs.length ? segs[s + 1] : null;
+          stops.last
+            ..isInterchange = true
+            ..changeTo = next != null ? '${next.line} at ${seg.toStation} (walk)' : null;
+        }
+        continue;
+      }
       if (stops.isEmpty || stops.last.name != seg.fromStation) {
-        stops.add(TrackedStop(
-          name: seg.fromStation,
-          line: seg.line,
-          lineColor: seg.lineColor,
-        ));
+        stops.add(TrackedStop(name: seg.fromStation, line: seg.line, lineColor: seg.lineColor));
       }
       for (final mid in seg.intermediateStations) {
-        stops.add(TrackedStop(
-          name: mid,
-          line: seg.line,
-          lineColor: seg.lineColor,
-        ));
+        stops.add(TrackedStop(name: mid, line: seg.line, lineColor: seg.lineColor));
       }
-      stops.add(TrackedStop(
-        name: seg.toStation,
-        line: seg.line,
-        lineColor: seg.lineColor,
-      ));
+      stops.add(TrackedStop(name: seg.toStation, line: seg.line, lineColor: seg.lineColor));
+      final next = s + 1 < segs.length ? segs[s + 1] : null;
+      if (next != null && next.line != GTFSGraphService.walkLine) {
+        stops.last
+          ..isInterchange = true
+          ..changeTo = next.line == seg.line ? '${next.line} train towards ${next.toStation}' : next.line;
+      }
     }
     return stops;
   }
 
   void _enrichStopCoords() {
-    final nameToStation = <String, MetroStation>{};
-    for (final s in _allStations) {
-      nameToStation[s.name.toLowerCase()] = s;
-    }
+    final nameToStation = <String, MetroStation>{
+      for (final s in _allStations) s.name.toLowerCase(): s,
+    };
     for (final stop in _trackedStops) {
       final match = nameToStation[stop.name.toLowerCase()];
       if (match != null) {
@@ -358,7 +496,8 @@ class StationTrackerService extends ChangeNotifier {
     }
   }
 
-  void _setError(String msg) {
+  void _setError(TrackerIssue issue, String msg) {
+    _issue = issue;
     _error = msg;
     _state = TrackerState.error;
     notifyListeners();

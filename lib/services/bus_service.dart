@@ -5,6 +5,9 @@ import '../models/bus_station.dart';
 import '../models/bus_route.dart';
 import 'gtfs_service.dart';
 
+/// Legacy sample-data bus service. No screen uses it any more — bus features
+/// run on `BusNetworkService` (full Delhi GTFS network) via `BusProvider`.
+/// Safe to delete.
 class BusService {
   // Realistic Delhi Bus Hubs & Stops (with genuine DTC / DIMTS route numbers)
   static final List<BusStation> _stations = [

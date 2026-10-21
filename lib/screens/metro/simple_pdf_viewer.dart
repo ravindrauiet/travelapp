@@ -118,7 +118,7 @@ class _SimplePDFViewerState extends State<SimplePDFViewer> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Official High-Definition schematic diagram covering all 12 operational lines, 262 stations, and major interchange junctions.',
+                                  'The official, always up-to-date DMRC network schematic with every line, station and interchange. Opens on the DMRC website in your browser (internet needed).',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.white.withValues(alpha: 0.82),
@@ -130,7 +130,7 @@ class _SimplePDFViewerState extends State<SimplePDFViewer> {
 
                                 // Open High-Res Map Button
                                 GradientButton(
-                                  label: 'Open Interactive HD Map',
+                                  label: 'Open Official DMRC Map',
                                   icon: Icons.open_in_new_rounded,
                                   onPressed: _openOfficialMap,
                                 ),

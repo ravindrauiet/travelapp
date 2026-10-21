@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 enum FlappyBirdState { playing, gameOver, paused }
 

@@ -172,7 +172,7 @@ class _ProfessionalMetroHomeScreenState
                   Expanded(
                     child: _actionCard(
                       'Service Updates',
-                      'Live line status',
+                      'Frequency & crowds',
                       Icons.update_rounded,
                       AppTheme.warningColor,
                       () => context.push('/metro/live-updates'),
@@ -613,9 +613,9 @@ class _ProfessionalMetroHomeScreenState
                     Icons.credit_card_rounded,
                     AppTheme.primaryColor,
                     '• Flat 10% discount on every metro journey\n'
-                        '• Extra 10% discount during off-peak hours (08:00–12:00 & 17:00–21:00 non-peak)\n'
+                        '• Extra 10% off in off-peak hours: before 8 AM, 12–5 PM and after 9 PM\n'
                         '• Minimum purchase & recharge: ₹100\n'
-                        '• Valid across Delhi Metro, DTC buses & Airport Express\n'
+                        '• Valid on all DMRC lines incl. Airport Express (separate AEL fare)\n'
                         '• Top up online via DMRC Momentum 2.0 app or station TVMs',
                   ),
                 ),
@@ -633,8 +633,8 @@ class _ProfessionalMetroHomeScreenState
                     Icons.local_parking_rounded,
                     AppTheme.successColor,
                     '• Available at 100+ major DMRC stations\n'
-                        '• 2-Wheeler: ₹10–₹25 per day\n'
-                        '• 4-Wheeler: ₹30–₹60 per day\n'
+                        '• 2-Wheeler: typically ₹10–₹25 per day\n'
+                        '• 4-Wheeler: typically ₹30–₹60 per day (varies by station)\n'
                         '• Overnight parking available at designated stations\n'
                         '• Fastag payment supported at major interchange hubs',
                   ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import 'ui_kit.dart' show kRootRoutes, parentRouteOf;
+
 class AppScaffold extends StatelessWidget {
   final Widget child;
   final String? title;
@@ -29,13 +31,7 @@ class AppScaffold extends StatelessWidget {
   });
 
   /// Root tab routes — pressing back on these shows the exit confirmation.
-  static const _rootRoutes = {
-    '/',
-    '/metro',
-    '/bus',
-    '/transport',
-    '/weather',
-  };
+  static const _rootRoutes = kRootRoutes;
 
   bool _isRootRoute(BuildContext context) {
     try {
@@ -46,36 +42,55 @@ class AppScaffold extends StatelessWidget {
     }
   }
 
+  bool _routerCanPop(BuildContext context) {
+    try {
+      return GoRouter.of(context).canPop();
+    } catch (_) {
+      return Navigator.of(context).canPop();
+    }
+  }
+
+  /// Back on a page with nothing beneath it (opened from the drawer, a bottom-nav
+  /// tab or a deep link): root tabs ask before exiting, sub-pages go to their
+  /// parent section instead of closing the app.
+  Future<void> _handleBlockedPop(BuildContext context, bool isRoot) async {
+    if (!isRoot) {
+      String location = '/';
+      try {
+        location = GoRouterState.of(context).matchedLocation;
+      } catch (_) {}
+      context.go(parentRouteOf(location));
+      return;
+    }
+    final shouldExit = await _showExitConfirmation(context);
+    if (shouldExit && context.mounted) {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isRoot = _isRootRoute(context);
+    final canPop = _routerCanPop(context);
 
     if (useCustomScaffold) {
       // Screen manages its own Scaffold — just wrap with pop handling.
       return PopScope(
         // Sub-pages can pop freely; only root/tab screens are intercepted.
-        canPop: !isRoot,
+        canPop: canPop,
         onPopInvoked: (didPop) async {
           if (didPop) return;
-          // canPop was false, so we must be a root screen. Show exit dialog.
-          final shouldExit = await _showExitConfirmation(context);
-          if (shouldExit && context.mounted) {
-            SystemNavigator.pop();
-          }
+          await _handleBlockedPop(context, isRoot);
         },
         child: child,
       );
     }
 
     return PopScope(
-      canPop: !isRoot,
+      canPop: canPop,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        // canPop was false, so we must be a root screen. Show exit dialog.
-        final shouldExit = await _showExitConfirmation(context);
-        if (shouldExit && context.mounted) {
-          SystemNavigator.pop();
-        }
+        await _handleBlockedPop(context, isRoot);
       },
       child: Scaffold(
         appBar: showAppBar

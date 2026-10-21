@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/metro_provider.dart';
 import '../../models/metro_station.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/app_constants.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/ui_kit.dart';
 
@@ -33,13 +34,13 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
       'name': 'Blue Line',
       'color': Color(0xFF1D4ED8),
       'terminals': 'Dwarka Sec 21 ↔ Noida Electronic City / Vaishali',
-      'stations': 58,
+      'stations': 57,
       'code': 'BLUE',
     },
     {
       'name': 'Airport Express',
       'color': Color(0xFFEA580C),
-      'terminals': 'New Delhi ↔ IGI Airport T3 (Yashobhoomi)',
+      'terminals': 'New Delhi ↔ IGI Airport T3 ↔ Yashobhoomi Dwarka Sec 25',
       'stations': 7,
       'code': 'AIRPORT',
     },
@@ -74,8 +75,8 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
     {
       'name': 'Green Line',
       'color': Color(0xFF16A34A),
-      'terminals': 'Inderlok ↔ Brig. Hoshiyar Singh',
-      'stations': 24,
+      'terminals': 'Inderlok / Kirti Nagar ↔ Brig. Hoshiyar Singh',
+      'stations': 23,
       'code': 'GREEN',
     },
     {
@@ -122,11 +123,11 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      } else if (mounted) {
         context.push('/metro/pdf-viewer');
       }
     } catch (_) {
-      context.push('/metro/pdf-viewer');
+      if (mounted) context.push('/metro/pdf-viewer');
     }
   }
 
@@ -241,7 +242,11 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
 
         final allStations = metroProvider.stations;
         final filteredStations = allStations.where((s) {
-          final matchesLine = _selectedLine == 'All' || s.line.toLowerCase().contains(_selectedLine.toLowerCase());
+          // Interchange stations belong to every line they serve.
+          final sel = _selectedLine.toLowerCase();
+          final matchesLine = _selectedLine == 'All' ||
+              s.line.toLowerCase().contains(sel) ||
+              s.interchangeLines.any((l) => l.toLowerCase().contains(sel));
           final matchesSearch = _searchQuery.isEmpty ||
               s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
               s.line.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -609,14 +614,14 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 15),
+                          Icon(Icons.schedule_rounded, color: p.textTertiary, size: 15),
                           const SizedBox(width: 5),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Normal Operational Frequency',
+                              _typicalHeadway(line['code'] as String),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11.5, color: AppTheme.successColor, fontWeight: FontWeight.w700),
+                              style: TextStyle(fontSize: 11.5, color: p.textSecondary, fontWeight: FontWeight.w700),
                             ),
                           ),
                           TextButton(
@@ -654,6 +659,14 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
         );
       },
     );
+  }
+
+  /// Typical (timetabled) frequency for a line — not live status.
+  String _typicalHeadway(String code) {
+    for (final l in DelhiMetroNetwork.allLines) {
+      if (l.code == code) return 'Typical frequency: every ${l.typicalHeadway}';
+    }
+    return 'Typical frequency: see DMRC timetable';
   }
 
   Color _getLineColor(String lineName) {

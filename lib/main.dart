@@ -19,6 +19,10 @@ import 'screens/metro/metro_map_screen.dart';
 import 'screens/metro/simple_pdf_viewer.dart';
 import 'screens/bus/professional_bus_home_screen.dart';
 import 'screens/bus/route_finder_screen.dart';
+import 'screens/bus/bus_journey_detail_screen.dart';
+import 'screens/bus/bus_route_detail_screen.dart';
+import 'screens/bus/bus_stop_detail_screen.dart';
+import 'models/bus_network.dart';
 import 'screens/bus/stop_locator_screen.dart';
 import 'screens/bus/bus_map_screen.dart';
 import 'screens/bus/realtime_bus_tracker.dart';
@@ -129,16 +133,41 @@ final GoRouter _router = GoRouter(
       ).withAppScaffold(),
     ),
     GoRoute(
+      path: '/bus/journey',
+      // The journey is passed in memory; on a cold deep link fall back to the planner.
+      builder: (context, state) => (state.extra is BusJourney
+              ? BusJourneyDetailScreen(journey: state.extra! as BusJourney)
+              : const BusRouteFinderScreen())
+          .withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/bus/route/:id',
+      builder: (context, state) => BusRouteDetailScreen(
+        lineId: state.pathParameters['id'] ?? '',
+      ).withAppScaffold(),
+    ),
+    GoRoute(
+      path: '/bus/stop/:id',
+      builder: (context, state) => BusStopDetailScreen(
+        stopId: state.pathParameters['id'] ?? '',
+      ).withAppScaffold(),
+    ),
+    GoRoute(
       path: '/bus/stop-locator',
       builder: (context, state) => const BusStopLocatorScreen().withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/map',
-      builder: (context, state) => const BusMapScreen().withAppScaffold(),
+      builder: (context, state) => BusMapScreen(
+        initialRoute: state.uri.queryParameters['route'],
+        focusBusId: state.uri.queryParameters['bus'],
+      ).withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/realtime',
-      builder: (context, state) => const RealtimeBusTracker().withAppScaffold(),
+      builder: (context, state) => RealtimeBusTracker(
+        initialRoute: state.uri.queryParameters['route'],
+      ).withAppScaffold(),
     ),
     GoRoute(
       path: '/transport',

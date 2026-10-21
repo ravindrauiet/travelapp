@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../providers/metro_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/app_constants.dart';
+import '../../services/accurate_fare_calculator.dart';
 import '../../widgets/ui_kit.dart';
 
 class MetroLiveUpdatesScreen extends StatefulWidget {
@@ -115,13 +115,13 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
   Widget _buildHeader() {
     return GradientHeader(
       title: 'Service Updates',
-      subtitle: 'Live line status, departures & crowds',
+      subtitle: 'Typical frequencies, timings & crowds',
       icon: Icons.update_rounded,
       gradient: AppTheme.transitGradient,
       illustration: 'assets/images/illus_metro.svg',
       actions: [
         Tooltip(
-          message: 'Refresh Status',
+          message: 'Refresh',
           child: Material(
             color: Colors.white.withValues(alpha: 0.14),
             shape: CircleBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
@@ -150,7 +150,6 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
   }
 
   Widget _buildAdvisoryBanner() {
-    final nowStr = DateFormat('h:mm a').format(DateTime.now());
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -164,11 +163,11 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.successColor,
+              color: AppTheme.infoColor,
               shape: BoxShape.circle,
-              boxShadow: AppTheme.glow(AppTheme.successColor, alpha: 0.5),
+              boxShadow: AppTheme.glow(AppTheme.infoColor, alpha: 0.5),
             ),
-            child: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+            child: const Icon(Icons.info_outline_rounded, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -176,12 +175,12 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'All 12 Lines Operational',
+                  'Typical service information',
                   style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Normal frequency across Yellow, Blue, Red & Airport Express • Updated $nowStr',
+                  'No live DMRC feed in the app. For disruptions call ${AppConstants.dmrcMetroHelpline} or check DMRC on X (@OfficialDMRC).',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: Colors.white.withValues(alpha: 0.78),
@@ -262,7 +261,7 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
       icon: Icons.location_on_rounded,
       color: AppTheme.primaryColor,
       title: 'Select metro station',
-      subtitle: 'See departures, platforms & amenities',
+      subtitle: 'See lines, typical frequency & facilities',
       trailing: _selectedStation.isNotEmpty
           ? TextButton(
               onPressed: () => setState(() => _selectedStation = ''),
@@ -283,7 +282,7 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
           borderRadius: BorderRadius.circular(16),
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: p.textSecondary),
           decoration: InputDecoration(
-            hintText: 'Choose station (e.g. Rajiv Chowk)',
+            hintText: 'Choose a station',
             hintStyle: TextStyle(fontSize: 13.5, color: p.textTertiary),
             prefixIcon: Icon(Icons.train_rounded, size: 20, color: p.primary),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -336,7 +335,7 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Select a station above to view live platform departures and connecting lines',
+                'Select a station above to see its lines, directions and typical train frequency',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.5,
@@ -356,64 +355,50 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
     return _sectionCard(
       icon: Icons.schedule_rounded,
       color: AppTheme.accentColor,
-      title: 'Next departures',
-      subtitle: _selectedStation,
-      trailing: const TagPill(label: 'LIVE', color: AppTheme.successColor, icon: Icons.circle),
+      title: 'Trains from this station',
+      subtitle: '$_selectedStation · typical frequency, not live',
+      trailing: const TagPill(label: 'TYPICAL', color: AppTheme.infoColor, icon: Icons.schedule_rounded),
       children: departures.map((d) => _buildTrainTimingRow(d)).toList(),
     );
   }
 
   List<_PlatformDeparture> _getDeparturesForStation(String station) {
-    // Find all lines serving this station in DelhiMetroNetwork
-    final lines = DelhiMetroNetwork.allLines.where((l) => l.stations.contains(station)).toList();
-
+    // Lines serving this station: the curated line lists first, then the GTFS
+    // station data (covers spelling differences).
+    final lower = station.toLowerCase();
+    final lines = DelhiMetroNetwork.allLines
+        .where((l) => l.stations.any((s) => s.toLowerCase() == lower))
+        .toList();
     if (lines.isEmpty) {
-      // Default sensible departures if station is newly added
-      return [
-        const _PlatformDeparture(
-          line: 'Yellow Line',
-          destination: 'Towards Millennium City Centre Gurugram',
-          time: '3 min',
-          platform: 'Platform 1',
-          color: Color(0xFFF59E0B),
-        ),
-        const _PlatformDeparture(
-          line: 'Yellow Line',
-          destination: 'Towards Samaypur Badli',
-          time: '6 min',
-          platform: 'Platform 2',
-          color: Color(0xFFF59E0B),
-        ),
-      ];
+      final gtfs = context.read<MetroProvider>().stations.where((s) => s.name.toLowerCase() == lower);
+      final names = gtfs.isEmpty ? const <String>[] : gtfs.first.interchangeLines;
+      lines.addAll(DelhiMetroNetwork.allLines.where((l) => names.contains(l.name)));
     }
 
     final departures = <_PlatformDeparture>[];
-    int platformNum = 1;
-
     for (final line in lines) {
       final firstTerminal = line.stations.first;
       final lastTerminal = line.stations.last;
+      final freq = 'Every ${line.typicalHeadway}';
+      final hours = 'Runs ${line.operatingHours}';
 
-      if (station != lastTerminal) {
+      if (lower != lastTerminal.toLowerCase()) {
         departures.add(_PlatformDeparture(
           line: line.name,
           destination: 'Towards $lastTerminal',
-          time: '${2 + (departures.length * 2)} min',
-          platform: 'Platform $platformNum',
+          time: freq,
+          platform: hours,
           color: line.color,
         ));
-        platformNum++;
       }
-
-      if (station != firstTerminal) {
+      if (lower != firstTerminal.toLowerCase()) {
         departures.add(_PlatformDeparture(
           line: line.name,
           destination: 'Towards $firstTerminal',
-          time: '${4 + (departures.length * 2)} min',
-          platform: 'Platform $platformNum',
+          time: freq,
+          platform: hours,
           color: line.color,
         ));
-        platformNum++;
       }
     }
 
@@ -465,7 +450,8 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
+                    Flexible(
+                      child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: p.tint(p.textTertiary),
@@ -473,12 +459,15 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
                       ),
                       child: Text(
                         d.platform,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: p.textSecondary,
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -511,14 +500,14 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
     return _sectionCard(
       icon: Icons.info_outline_rounded,
       color: AppTheme.successColor,
-      title: '$_selectedStation amenities',
-      subtitle: 'Facilities available at this station',
+      title: 'Station facilities',
+      subtitle: 'Typical at DMRC stations — check signage on site',
       children: [
-        _buildInfoRow('Lifts & Escalators', 'Functional', Icons.elevator_rounded, AppTheme.primaryColor),
-        _buildInfoRow('Wheelchair Assistance', 'Available at Gate 1', Icons.accessible_rounded, AppTheme.infoColor),
-        _buildInfoRow('DMRC Smart Card Recharge', 'Available (Counter & TVM)', Icons.credit_card_rounded, AppTheme.brandViolet),
-        _buildInfoRow('ATM Facility', 'SBI / PNB Available', Icons.local_atm_rounded, AppTheme.warningColor),
-        _buildInfoRow('Public Restrooms', 'Available (Concourse)', Icons.wc_rounded, AppTheme.metroPink),
+        _buildInfoRow('Lifts & Escalators', 'At most stations', Icons.elevator_rounded, AppTheme.primaryColor),
+        _buildInfoRow('Wheelchair Assistance', 'Ask Customer Care', Icons.accessible_rounded, AppTheme.infoColor),
+        _buildInfoRow('Smart Card / QR Tickets', 'Counter, TVM & DMRC app', Icons.credit_card_rounded, AppTheme.brandViolet),
+        _buildInfoRow('ATM', 'At many stations', Icons.local_atm_rounded, AppTheme.warningColor),
+        _buildInfoRow('Public Restrooms', 'At most stations', Icons.wc_rounded, AppTheme.metroPink),
       ],
     );
   }
@@ -563,8 +552,8 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
   }
 
   Widget _buildCrowdDensity() {
-    final currentHour = DateTime.now().hour;
-    final isPeak = (currentHour >= 8 && currentHour <= 10) || (currentHour >= 17 && currentHour <= 20);
+    // Same peak/off-peak bands DMRC uses for the Smart Card off-peak discount.
+    final isPeak = !AccurateFareCalculator.isOffPeakHour(DateTime.now());
 
     return _sectionCard(
       icon: Icons.people_alt_rounded,
@@ -576,10 +565,10 @@ class _MetroLiveUpdatesScreenState extends State<MetroLiveUpdatesScreen>
         color: isPeak ? AppTheme.errorColor : AppTheme.successColor,
       ),
       children: [
-        _buildCrowdRow('08:00 AM – 11:00 AM', 'Peak Morning Commute', 'High', AppTheme.errorColor, 0.9),
-        _buildCrowdRow('11:00 AM – 04:30 PM', 'Afternoon Non-Peak', 'Light', AppTheme.successColor, 0.35),
-        _buildCrowdRow('05:00 PM – 08:30 PM', 'Evening Rush Hour', 'High', AppTheme.errorColor, 0.95),
-        _buildCrowdRow('08:30 PM – 11:30 PM', 'Late Night Normal', 'Light', AppTheme.successColor, 0.3),
+        _buildCrowdRow('08:00 AM – 12:00 PM', 'Peak morning commute', 'High', AppTheme.errorColor, 0.9),
+        _buildCrowdRow('12:00 PM – 05:00 PM', 'Off-peak (Smart Card 20% off)', 'Light', AppTheme.successColor, 0.35),
+        _buildCrowdRow('05:00 PM – 09:00 PM', 'Evening rush hour', 'High', AppTheme.errorColor, 0.95),
+        _buildCrowdRow('After 09:00 PM', 'Off-peak (Smart Card 20% off)', 'Light', AppTheme.successColor, 0.3),
       ],
     );
   }

@@ -173,7 +173,7 @@ class _ProfessionalWeatherScreenState extends State<ProfessionalWeatherScreen> {
       title: weather?.location ?? 'Weather & Air Quality',
       subtitle: weather == null
           ? 'Delhi NCR commute conditions'
-          : '$_timeOfDayLabel • Updated ${DateFormat('h:mm a').format(weather.lastUpdated)}',
+          : '$_timeOfDayLabel • Typical conditions, not live',
       gradient: _skyGradient,
       leading: showMenu
           ? Builder(
@@ -378,7 +378,7 @@ class _ProfessionalWeatherScreenState extends State<ProfessionalWeatherScreen> {
                   ],
                 ),
               ),
-              TagPill(label: 'LIVE', color: aqiColor, icon: Icons.circle),
+              TagPill(label: 'TYPICAL', color: aqiColor, icon: Icons.circle),
             ],
           ),
           const SizedBox(height: 18),

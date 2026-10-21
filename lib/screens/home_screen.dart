@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../widgets/feature_card.dart';
 import '../widgets/compact_feature_card.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/app_drawer.dart';
@@ -485,81 +484,6 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       );
-  }
-
-  Widget _buildResponsiveStats(BuildContext context) {
-    final stats = [
-      {'label': 'Metro Lines', 'value': '8', 'icon': Icons.train},
-      {'label': 'Bus Routes', 'value': '150+', 'icon': Icons.directions_bus},
-      {'label': 'Stations', 'value': '300+', 'icon': Icons.location_on},
-      {'label': 'Daily Users', 'value': '2.8M', 'icon': Icons.people},
-      {'label': 'Coverage', 'value': '95%', 'icon': Icons.map},
-    ];
-
-    final visibleStats = stats.take(ResponsiveHelper.getWelcomeStatsCount(context)).toList();
-    
-    if (ResponsiveHelper.isMobile(context)) {
-      return Row(
-        children: visibleStats.map((stat) => 
-          Expanded(
-            child: _buildQuickStat(
-              stat['label'] as String,
-              stat['value'] as String,
-              stat['icon'] as IconData,
-              Colors.white,
-            ),
-          ),
-        ).toList(),
-      );
-    } else {
-      return Wrap(
-        spacing: ResponsiveHelper.getGridSpacing(context),
-        runSpacing: ResponsiveHelper.getGridSpacing(context),
-        children: visibleStats.map((stat) => 
-          SizedBox(
-            width: (MediaQuery.of(context).size.width - ResponsiveHelper.getScreenPadding(context).horizontal - ResponsiveHelper.getGridSpacing(context) * (visibleStats.length - 1)) / visibleStats.length,
-            child: _buildQuickStat(
-              stat['label'] as String,
-              stat['value'] as String,
-              stat['icon'] as IconData,
-              Colors.white,
-            ),
-          ),
-        ).toList(),
-      );
-    }
-  }
-
-  Widget _buildQuickStat(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.white70,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSectionHeader(String title, String subtitle, VoidCallback onTap) {

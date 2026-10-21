@@ -106,8 +106,11 @@ class AppDrawer extends StatelessWidget {
                   label: 'Privacy Policy',
                   trailingIcon: Icons.open_in_new_rounded,
                   onTap: () {
+                    // The drawer is gone once the URL check finishes; use the
+                    // navigator's context for the fallback dialog.
+                    final hostContext = Navigator.of(context).context;
                     Navigator.pop(context);
-                    _openPrivacyPolicy(context);
+                    _openPrivacyPolicy(hostContext);
                   },
                 ),
                 _DrawerItem(
@@ -258,11 +261,11 @@ class AppDrawer extends StatelessWidget {
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      } else if (context.mounted) {
         _showLocalPrivacyDialog(context);
       }
     } catch (_) {
-      _showLocalPrivacyDialog(context);
+      if (context.mounted) _showLocalPrivacyDialog(context);
     }
   }
 

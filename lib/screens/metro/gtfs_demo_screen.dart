@@ -31,17 +31,17 @@ class _GTFSDemoScreenState extends State<GTFSDemoScreen> {
       setState(() {
         _status = 'Loading agencies...';
       });
-      final agencies = await GTFSDataParser.getAgencies();
+      await GTFSDataParser.getAgencies();
       
       setState(() {
         _status = 'Loading stops...';
       });
-      final stops = await GTFSDataParser.getStops();
+      await GTFSDataParser.getStops();
       
       setState(() {
         _status = 'Loading routes...';
       });
-      final routes = await GTFSDataParser.getRoutes();
+      await GTFSDataParser.getRoutes();
       
       setState(() {
         _status = 'Loading trips...';

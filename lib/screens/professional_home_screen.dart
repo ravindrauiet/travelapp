@@ -85,7 +85,7 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
               SectionHeader(
                 title: 'Metro lines',
                 subtitle: 'Frequency & route of every line',
-                actionLabel: 'Live status',
+                actionLabel: 'Service info',
                 onAction: () => context.push('/metro/live-updates'),
               ),
               const SizedBox(height: 12),
@@ -882,12 +882,14 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
                               ),
                               Row(
                                 children: [
-                                  TagPill(
-                                    label: line.typicalHeadway,
-                                    color: AppTheme.successColor,
-                                    icon: Icons.schedule_rounded,
+                                  Flexible(
+                                    child: TagPill(
+                                      label: line.typicalHeadway,
+                                      color: AppTheme.successColor,
+                                      icon: Icons.schedule_rounded,
+                                    ),
                                   ),
-                                  const Spacer(),
+                                  const SizedBox(width: 8),
                                   Text(
                                     '${line.stationCount} stops',
                                     style: TextStyle(
