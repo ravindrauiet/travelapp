@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/app_constants.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/ui_kit.dart';
 import '../../utils/responsive_helper.dart';
 
 class ProfessionalMetroHomeScreen extends StatefulWidget {
@@ -15,389 +18,112 @@ class ProfessionalMetroHomeScreen extends StatefulWidget {
 
 class _ProfessionalMetroHomeScreenState
     extends State<ProfessionalMetroHomeScreen> {
-  // All Delhi Metro lines with accurate data
-  static const _lines = [
-    _MetroLine('Red Line',      Color(0xFFE53935), 'Rithala – New Bus Adda',               '29'),
-    _MetroLine('Yellow Line',   Color(0xFFFDD835), 'Samaypur Badli – HUDA City Centre',    '37'),
-    _MetroLine('Blue Line',     Color(0xFF1E88E5), 'Dwarka Sec 21 – Vaishali / Noida',     '52'),
-    _MetroLine('Green Line',    Color(0xFF43A047), 'Inderlok – Brigadier Hoshiyar Singh',  '24'),
-    _MetroLine('Violet Line',   Color(0xFF8E24AA), 'Kashmere Gate – Raja Nahar Singh',     '34'),
-    _MetroLine('Pink Line',     Color(0xFFE91E63), 'Majlis Park – Shiv Vihar',             '38'),
-    _MetroLine('Magenta Line',  Color(0xFF6A1B9A), 'Janakpuri West – Botanical Garden',    '25'),
-    _MetroLine('Orange Line',   Color(0xFFFF6F00), 'New Delhi – Dwarka Sec 21 (Airport)',  '6' ),
-    _MetroLine('Aqua Line',     Color(0xFF00ACC1), 'Noida Sector 51 – Depot Station',      '21'),
-    _MetroLine('Grey Line',     Color(0xFF757575), 'Dwarka – Najafgarh',                   '3' ),
-    _MetroLine('Rapid Metro',   Color(0xFF0097A7), 'Sector 55-56 – Sector 53-54',          '6' ),
-  ];
 
   @override
   Widget build(BuildContext context) {
     final isTablet = ResponsiveHelper.isTablet(context);
+    final p = context.palette;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
-      appBar: _buildAppBar(context),
-      drawer: isTablet
-          ? null
-          : const AppDrawer(
-              title: 'Delhi Metro',
-              subtitle: 'Fast, Safe & Reliable',
-            ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-            _buildQuickActions(context),
-            const SizedBox(height: 20),
-            _buildMetroLines(context),
-            const SizedBox(height: 20),
-            _buildServices(context),
-            const SizedBox(height: 20),
-            _buildFareInfo(context),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      iconTheme: const IconThemeData(color: Colors.black87),
-      title: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppTheme.metroBlue,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.train, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'Delhi Metro',
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search, color: Colors.black87),
-          tooltip: 'Find Route',
-          onPressed: () => context.push('/metro/route-finder'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.metroBlue, AppTheme.metroBlue.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.metroBlue.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Delhi Metro Rail',
-            style: TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Fast, Safe & Reliable',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Row(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: p.background,
+        drawer: isTablet
+            ? null
+            : const AppDrawer(
+                title: 'Delhi Metro',
+                subtitle: 'Fast, Safe & Reliable',
+              ),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeaderStat('Lines', '${_lines.length}', Icons.train),
-              const SizedBox(width: 20),
-              _buildHeaderStat('Stations', '262', Icons.location_on),
-              const SizedBox(width: 20),
-              _buildHeaderStat('Daily', '2.8M', Icons.people),
+              _buildHeader(context, isTablet),
+              const SizedBox(height: 22),
+              _buildQuickActions(context),
+              const SizedBox(height: 26),
+              _buildMetroLines(context),
+              const SizedBox(height: 26),
+              _buildServices(context),
+              const SizedBox(height: 26),
+              _buildFareInfo(context),
+              const SizedBox(height: 32),
             ],
           ),
+        ),
+        bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
+      ),
+    );
+  }
+
+  // ── Header ────────────────────────────────────────────────────────────────
+
+  Widget _buildHeader(BuildContext context, bool isTablet) {
+    return GradientHeader(
+      title: 'Delhi Metro',
+      subtitle: 'Fast, safe & eco-friendly rapid transit',
+      icon: Icons.train_rounded,
+      illustration: 'assets/images/illus_metro.svg',
+      leading: isTablet
+          ? null
+          : Builder(
+              builder: (ctx) => HeaderIconButton(
+                icon: Icons.menu_rounded,
+                tooltip: 'Navigation Menu',
+                onTap: () => Scaffold.maybeOf(ctx)?.openDrawer(),
+              ),
+            ),
+      actions: [
+        HeaderIconButton(
+          icon: Icons.search_rounded,
+          tooltip: 'Find Metro Route',
+          onTap: () => context.push('/metro/route-finder'),
+        ),
+      ],
+      bottom: Row(
+        children: [
+          _buildHeaderStat('Lines', '${AppConstants.metroLinesCount}', Icons.alt_route_rounded),
+          const SizedBox(width: 10),
+          _buildHeaderStat('Stations', '${AppConstants.metroStationsCount}', Icons.location_on_rounded),
+          const SizedBox(width: 10),
+          _buildHeaderStat('Network', '${AppConstants.metroNetworkLengthKm.toInt()} km', Icons.timeline_rounded),
         ],
       ),
     );
   }
 
   Widget _buildHeaderStat(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 20),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 10)),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Quick Actions',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _actionCard('Find Route', Icons.directions,
-                    AppTheme.metroBlue, () => context.push('/metro/route-finder')),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _actionCard('Fare Calculator', Icons.calculate,
-                    AppTheme.metroGreen,
-                    () => context.push('/metro/fare-calculator')),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _actionCard('Live Updates', Icons.update,
-                    AppTheme.metroOrange,
-                    () => context.push('/metro/live-updates')),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _actionCard('Metro Map', Icons.map, AppTheme.metroRed,
-                    () => context.push('/metro/pdf-viewer')),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: GestureDetector(
-              onTap: () => context.push('/metro/live-tracker'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.metroBlue.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.my_location, color: Colors.white, size: 20),
-                    SizedBox(width: 10),
-                    Text(
-                      'Live Station Tracker',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_ios,
-                        color: Colors.white70, size: 14),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionCard(
-      String title, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
+    return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87),
-                textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetroLines(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('Metro Lines',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87)),
-              const Spacer(),
-              Text('${_lines.length} lines',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ..._lines.map((line) => _lineCard(line, context)),
-        ],
-      ),
-    );
-  }
-
-  Widget _lineCard(_MetroLine line, BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/metro/route-finder'),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
         ),
         child: Row(
           children: [
-            // Colour bar
-            Container(
-              width: 5,
-              height: 44,
-              decoration: BoxDecoration(
-                color: line.color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // Colour circle + name
-            Container(
-              width: 32,
-              height: 32,
-              decoration:
-                  BoxDecoration(color: line.color, shape: BoxShape.circle),
-              child: const Icon(Icons.train, color: Colors.white, size: 16),
-            ),
-            const SizedBox(width: 12),
+            Icon(icon, color: const Color(0xFFFFB547), size: 18),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(line.name,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87)),
-                  const SizedBox(height: 2),
-                  Text(line.route,
-                      style:
-                          const TextStyle(fontSize: 11, color: Colors.grey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: line.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${line.stationCount} stn',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: line.color),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Icon(Icons.chevron_right, size: 16, color: Colors.grey[400]),
-              ],
             ),
           ],
         ),
@@ -405,36 +131,492 @@ class _ProfessionalMetroHomeScreenState
     );
   }
 
-  Widget _buildServices(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+  // ── Quick actions ─────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(title: 'Quick actions', subtitle: 'Everything you need for your ride'),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionCard(
+                      'Route Finder',
+                      'Fastest path',
+                      Icons.directions_rounded,
+                      AppTheme.accentColor,
+                      () => context.push('/metro/route-finder'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _actionCard(
+                      'Fare Calculator',
+                      'Token & card',
+                      Icons.calculate_rounded,
+                      AppTheme.successColor,
+                      () => context.push('/metro/fare-calculator'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionCard(
+                      'Service Updates',
+                      'Live line status',
+                      Icons.update_rounded,
+                      AppTheme.warningColor,
+                      () => context.push('/metro/live-updates'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _actionCard(
+                      'Metro Map',
+                      'Official DMRC map',
+                      Icons.map_rounded,
+                      AppTheme.primaryColor,
+                      () => context.push('/metro/map'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              AppCard(
+                gradient: AppTheme.oceanGradient,
+                radius: 22,
+                padding: const EdgeInsets.all(16),
+                onTap: () => context.push('/metro/live-tracker'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                      ),
+                      child: const Icon(Icons.my_location_rounded, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Station Proximity Tracker',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Get alerted before your stop arrives',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final p = context.palette;
+    return AppCard(
+      onTap: onTap,
+      radius: 22,
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Station Services',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
-          const SizedBox(height: 12),
           Row(
+            children: [
+              IconBubble(icon: icon, color: color, filled: true, size: 42, radius: 13),
+              const Spacer(),
+              Icon(Icons.north_east_rounded, size: 16, color: p.textTertiary),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: p.textPrimary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11.5, color: p.textTertiary, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Metro lines ───────────────────────────────────────────────────────────
+
+  Widget _buildMetroLines(BuildContext context) {
+    const lines = DelhiMetroNetwork.allLines;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'Metro corridors',
+          subtitle: '${lines.length} lines • Tap for stations',
+        ),
+        const SizedBox(height: 12),
+        ...lines.map((line) => _lineCard(line, context)),
+      ],
+    );
+  }
+
+  Widget _lineCard(MetroLineDetails line, BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: EdgeInsets.zero,
+      radius: 20,
+      onTap: () => _showLineDetailModal(context, line),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Colour indicator bar
+              Container(width: 5, color: line.color),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      IconBubble(icon: Icons.train_rounded, color: line.color, filled: true, size: 40, radius: 12),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              line.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: p.textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              line.route,
+                              style: TextStyle(fontSize: 11.5, color: p.textTertiary, fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TagPill(label: '${line.stationCount} STN', color: line.color),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right_rounded, size: 20, color: p.textTertiary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLineDetailModal(BuildContext context, MetroLineDetails line) {
+    final p = context.palette;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: p.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Column(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: p.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 6, 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [line.color, Color.lerp(line.color, AppTheme.brandNight, 0.45)!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: AppTheme.glow(line.color, alpha: 0.3),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.train_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              line.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${line.stationCount} Stations • Typical Headway: ${line.typicalHeadway}',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.82)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+                  child: Row(
+                    children: [
+                      Icon(Icons.touch_app_rounded, size: 14, color: p.textTertiary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Tap a station to plan a route there',
+                          style: TextStyle(fontSize: 12, color: p.textTertiary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: line.stations.length,
+                    itemBuilder: (context, idx) {
+                      final station = line.stations[idx];
+                      final isInterchange = line.interchanges.containsKey(station);
+                      final interchangeLines = line.interchanges[station];
+                      final isFirst = idx == 0;
+                      final isLast = idx == line.stations.length - 1;
+                      final isEnd = isFirst || isLast;
+                      final dotSize = isEnd ? 16.0 : (isInterchange ? 14.0 : 10.0);
+
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final resolved = AppConstants.resolveToMetroStation(station);
+                          context.push('/metro/route-finder?to=${Uri.encodeComponent(resolved)}');
+                        },
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                width: 28,
+                                child: Stack(
+                                  alignment: Alignment.topCenter,
+                                  children: [
+                                    Positioned(
+                                      top: isFirst ? 14 : 0,
+                                      bottom: isLast ? null : 0,
+                                      height: isLast ? 14 : null,
+                                      child: Container(width: 4, color: line.color.withValues(alpha: 0.55)),
+                                    ),
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 14 - dotSize / 2),
+                                      child: Container(
+                                        width: dotSize,
+                                        height: dotSize,
+                                        decoration: BoxDecoration(
+                                          color: isEnd
+                                              ? line.color
+                                              : (isInterchange ? AppTheme.warningColor : p.surface),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isEnd || isInterchange ? p.surface : line.color,
+                                            width: isEnd || isInterchange ? 3 : 2.5,
+                                          ),
+                                          boxShadow: isEnd || isInterchange
+                                              ? AppTheme.glow(isEnd ? line.color : AppTheme.warningColor, alpha: 0.35)
+                                              : null,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        height: 20,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              '${idx + 1}. ',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: p.textTertiary,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                station,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: isEnd || isInterchange ? FontWeight.w800 : FontWeight.w600,
+                                                  color: isEnd || isInterchange ? p.textPrimary : p.textSecondary,
+                                                ),
+                                              ),
+                                            ),
+                                            if (isEnd)
+                                              TagPill(label: isFirst ? 'START' : 'TERMINAL', color: line.color),
+                                          ],
+                                        ),
+                                      ),
+                                      if (isInterchange && interchangeLines != null) ...[
+                                        const SizedBox(height: 6),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: interchangeLines
+                                              .map((il) => TagPill(
+                                                    label: 'Interchange: $il',
+                                                    color: AppTheme.warningColor,
+                                                    icon: Icons.swap_horiz_rounded,
+                                                  ))
+                                              .toList(),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 14),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Amenities ─────────────────────────────────────────────────────────────
+
+  Widget _buildServices(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(title: 'Station amenities', subtitle: 'Tap a card for the details'),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
             children: [
               Expanded(
                 child: _serviceCard(
                   'Smart Card',
-                  'Recharge & Balance',
-                  Icons.credit_card,
-                  AppTheme.metroBlue,
+                  '10% Ride Off',
+                  Icons.credit_card_rounded,
+                  AppTheme.primaryColor,
                   () => _showInfoSheet(
                     context,
-                    'Smart Card',
-                    Icons.credit_card,
-                    AppTheme.metroBlue,
-                    'Delhi Metro Smart Card gives 10% discount on every journey.\n\n'
-                        '• Minimum balance: ₹20\n'
-                        '• Auto top-up available\n'
-                        '• Valid for 10 years\n'
-                        '• Recharge at any metro station or online via DMRC app.',
+                    'DMRC Smart Card Benefits',
+                    Icons.credit_card_rounded,
+                    AppTheme.primaryColor,
+                    '• Flat 10% discount on every metro journey\n'
+                        '• Extra 10% discount during off-peak hours (08:00–12:00 & 17:00–21:00 non-peak)\n'
+                        '• Minimum purchase & recharge: ₹100\n'
+                        '• Valid across Delhi Metro, DTC buses & Airport Express\n'
+                        '• Top up online via DMRC Momentum 2.0 app or station TVMs',
                   ),
                 ),
               ),
@@ -442,19 +624,19 @@ class _ProfessionalMetroHomeScreenState
               Expanded(
                 child: _serviceCard(
                   'Parking',
-                  'Station Parking',
-                  Icons.local_parking,
-                  AppTheme.metroGreen,
+                  'Station Lots',
+                  Icons.local_parking_rounded,
+                  AppTheme.successColor,
                   () => _showInfoSheet(
                     context,
-                    'Station Parking',
-                    Icons.local_parking,
-                    AppTheme.metroGreen,
-                    'Parking facilities available at select metro stations.\n\n'
-                        '• 2-wheeler: ₹10-20/day\n'
-                        '• 4-wheeler: ₹40-80/day\n'
-                        '• Monthly passes available\n'
-                        '• CCTV monitored 24/7',
+                    'Metro Station Parking',
+                    Icons.local_parking_rounded,
+                    AppTheme.successColor,
+                    '• Available at 100+ major DMRC stations\n'
+                        '• 2-Wheeler: ₹10–₹25 per day\n'
+                        '• 4-Wheeler: ₹30–₹60 per day\n'
+                        '• Overnight parking available at designated stations\n'
+                        '• Fastag payment supported at major interchange hubs',
                   ),
                 ),
               ),
@@ -462,220 +644,274 @@ class _ProfessionalMetroHomeScreenState
               Expanded(
                 child: _serviceCard(
                   'Wi-Fi',
-                  'Free Internet',
-                  Icons.wifi,
-                  AppTheme.metroOrange,
+                  'High Speed',
+                  Icons.wifi_rounded,
+                  AppTheme.brandViolet,
                   () => _showInfoSheet(
                     context,
-                    'Free Wi-Fi',
-                    Icons.wifi,
-                    AppTheme.metroOrange,
-                    'Free high-speed Wi-Fi is available at all Delhi Metro stations.\n\n'
-                        '• Speed: up to 100 Mbps\n'
-                        '• Connect to "Metro Free WiFi" network\n'
-                        '• No registration required\n'
-                        '• Available inside trains on select lines',
+                    'Free Metro Wi-Fi',
+                    Icons.wifi_rounded,
+                    AppTheme.brandViolet,
+                    '• Available at all Airport Express Line stations & trains\n'
+                        '• Select interchange stations offer "Free Wi-Fi DMRC"\n'
+                        '• OTP authentication required for Indian mobile numbers',
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _serviceCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final p = context.palette;
+    return AppCard(
+      onTap: onTap,
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+      child: Column(
+        children: [
+          IconBubble(icon: icon, color: color, size: 42, radius: 13),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textPrimary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 10.5, color: color, fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _serviceCard(String title, String subtitle, IconData icon, Color color,
-      VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87),
-                textAlign: TextAlign.center),
-            Text(subtitle,
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 4),
-            Icon(Icons.info_outline, size: 12, color: color),
-          ],
-        ),
-      ),
-    );
-  }
+  // ── Fares ─────────────────────────────────────────────────────────────────
 
   Widget _buildFareInfo(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: () => context.push('/metro/fare-calculator'),
-        child: Container(
+    final p = context.palette;
+    const slabs = [
+      ('0–2 km', 11),
+      ('2–5 km', 21),
+      ('5–12 km', 32),
+      ('12–21 km', 43),
+      ('21–32 km', 54),
+      ('32+ km', 64),
+    ];
+    const slabColors = [
+      AppTheme.successColor,
+      AppTheme.metroAqua,
+      AppTheme.primaryColor,
+      AppTheme.brandViolet,
+      AppTheme.metroPink,
+      AppTheme.accentColor,
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'Standard fare slabs',
+          subtitle: 'Distance-based DMRC token fares',
+          actionLabel: 'Calculator',
+          onAction: () => context.push('/metro/fare-calculator'),
+        ),
+        const SizedBox(height: 12),
+        AppCard(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          radius: 24,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+          onTap: () => context.push('/metro/fare-calculator'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Text('Fare Information',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87)),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.metroBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                  _fareChip('Minimum', '₹${AppConstants.metroMinFare}', AppTheme.successColor),
+                  const SizedBox(width: 8),
+                  _fareChip('Maximum', '₹${AppConstants.metroMaxFare}', AppTheme.accentColor),
+                  const SizedBox(width: 8),
+                  _fareChip('Smart Card', '10% Off', AppTheme.primaryColor),
+                ],
+              ),
+              const SizedBox(height: 16),
+              for (var i = 0; i < slabs.length; i++)
+                _fareRow(slabs[i].$1, slabs[i].$2, slabColors[i]),
+              const SizedBox(height: 4),
+              Divider(height: 20, color: p.border),
+              Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: p.textTertiary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Tap to calculate the exact fare between two stations',
+                      style: TextStyle(fontSize: 11.5, color: p.textTertiary, fontWeight: FontWeight.w600),
                     ),
-                    child: const Text('Calculate →',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.metroBlue)),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fareChip(String label, String value, Color color) {
+    final p = context.palette;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: p.tint(color),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10.5, color: p.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fareRow(String distance, int fare, Color color) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(
+              distance,
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: p.textSecondary),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Stack(
                 children: [
-                  _fareChip('Minimum', '₹10', Colors.green),
-                  const SizedBox(width: 20),
-                  _fareChip('Maximum', '₹60', Colors.orange),
-                  const SizedBox(width: 20),
-                  _fareChip('Smart Card', '10% Off', AppTheme.metroBlue),
+                  Container(height: 8, color: p.tint(color)),
+                  FractionallySizedBox(
+                    widthFactor: fare / 64,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [color.withValues(alpha: 0.7), color]),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
-              // Fare slabs
-              _fareRow('0–2 km', '₹10'),
-              _fareRow('2–5 km', '₹20'),
-              _fareRow('5–12 km', '₹30'),
-              _fareRow('12–21 km', '₹40'),
-              _fareRow('21–32 km', '₹50'),
-              _fareRow('32+ km', '₹60'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '₹$fare',
+              textAlign: TextAlign.right,
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: p.textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoSheet(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String body,
+  ) {
+    final p = context.palette;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: p.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(color: p.border, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              Row(
+                children: [
+                  IconBubble(icon: icon, color: color, filled: true, size: 44, radius: 14),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: p.textPrimary),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: Icon(Icons.close_rounded, color: p.textSecondary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: p.tint(color),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Text(
+                  body,
+                  style: TextStyle(fontSize: 13, height: 1.7, color: p.textSecondary, fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget _fareChip(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.bold, color: color)),
-        Text(label,
-            style: const TextStyle(fontSize: 10, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _fareRow(String distance, String fare) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(distance,
-              style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          Text(fare,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.metroBlue)),
-        ],
-      ),
-    );
-  }
-
-  void _showInfoSheet(BuildContext context, String title, IconData icon,
-      Color color, String body) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      shape: BoxShape.circle),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(body,
-                style: const TextStyle(
-                    fontSize: 14, color: Colors.black87, height: 1.6)),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MetroLine {
-  final String name;
-  final Color color;
-  final String route;
-  final String stationCount;
-  const _MetroLine(this.name, this.color, this.route, this.stationCount);
 }

@@ -3,25 +3,26 @@ import '../models/weather_data.dart';
 
 class WeatherService {
   Future<WeatherData> getCurrentWeather() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(seconds: 2));
+    // Realistic simulation of Delhi NCR weather
+    await Future.delayed(const Duration(milliseconds: 400));
     
-    // Generate sample weather data for Delhi
     final random = Random();
-    final temperature = 20 + random.nextInt(20); // 20-40°C
-    final aqi = 50 + random.nextInt(200); // 50-250 AQI
+    // Delhi pleasant/mild temperature
+    final temperature = 24 + random.nextInt(8); // 24–31°C
+    // Delhi typical AQI (Moderate to Poor)
+    final aqi = 110 + random.nextInt(75); // 110–184 AQI
     
     return WeatherData(
-      location: 'Delhi',
+      location: 'Delhi NCR',
       temperature: temperature.toDouble(),
-      feelsLike: (temperature + random.nextInt(5) - 2).toDouble(),
+      feelsLike: (temperature + 1).toDouble(),
       description: _getWeatherDescription(temperature),
       icon: _getWeatherIcon(temperature),
-      humidity: (40 + random.nextInt(40)).toDouble(),
-      windSpeed: (5 + random.nextInt(15)).toDouble(),
-      pressure: 1000 + random.nextInt(50),
-      visibility: (5 + random.nextInt(10)).toDouble(),
-      uvIndex: (1 + random.nextInt(10)).toDouble(),
+      humidity: (45 + random.nextInt(20)).toDouble(),
+      windSpeed: (8 + random.nextInt(8)).toDouble(),
+      pressure: 1011 + random.nextInt(5), // Realistic 1011–1015 hPa for Delhi
+      visibility: 4.5,
+      uvIndex: 4.0,
       airQuality: AirQuality(
         aqi: aqi,
         level: _getAQIDescription(aqi),
@@ -33,26 +34,27 @@ class WeatherService {
   }
 
   Future<List<WeatherForecast>> getWeatherForecast() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 300));
     
     final random = Random();
     final forecasts = <WeatherForecast>[];
+    final now = DateTime.now();
     
-    for (int i = 1; i <= 7; i++) {
-      final date = DateTime.now().add(Duration(days: i));
-      final maxTemp = 25 + random.nextInt(15);
-      final minTemp = maxTemp - 8 - random.nextInt(5);
+    // Day 0 = Today, Day 1 = Tomorrow, Day 2..6 = Subsequent days
+    for (int i = 0; i < 7; i++) {
+      final date = DateTime(now.year, now.month, now.day).add(Duration(days: i));
+      final maxTemp = 28 + random.nextInt(6);
+      final minTemp = maxTemp - 9 - random.nextInt(3);
       
       forecasts.add(WeatherForecast(
         date: date,
         maxTemp: maxTemp.toDouble(),
         minTemp: minTemp.toDouble(),
-        description: _getWeatherDescription(maxTemp),
+        description: i == 0 ? 'Hazy Sunshine' : (i == 1 ? 'Partly Cloudy' : _getWeatherDescription(maxTemp)),
         icon: _getWeatherIcon(maxTemp),
-        precipitation: random.nextInt(30).toDouble(),
-        humidity: (30 + random.nextInt(50)).toDouble(),
-        windSpeed: (3 + random.nextInt(12)).toDouble(),
+        precipitation: random.nextInt(15).toDouble(),
+        humidity: (40 + random.nextInt(25)).toDouble(),
+        windSpeed: (6 + random.nextInt(8)).toDouble(),
       ));
     }
     
@@ -60,36 +62,42 @@ class WeatherService {
   }
 
   String _getWeatherDescription(int temperature) {
-    if (temperature < 15) return 'Cold';
-    if (temperature < 25) return 'Cool';
-    if (temperature < 35) return 'Pleasant';
+    if (temperature < 15) return 'Cold & Foggy';
+    if (temperature < 25) return 'Pleasant';
+    if (temperature < 35) return 'Warm & Sunny';
     if (temperature < 40) return 'Hot';
-    return 'Very Hot';
+    return 'Heatwave';
   }
 
   String _getWeatherIcon(int temperature) {
-    if (temperature < 15) return '13d'; // snow
-    if (temperature < 25) return '02d'; // few clouds
-    if (temperature < 35) return '01d'; // clear sky
-    if (temperature < 40) return '03d'; // scattered clouds
-    return '04d'; // broken clouds
+    if (temperature < 15) return '13d';
+    if (temperature < 25) return '02d';
+    if (temperature < 35) return '01d';
+    return '01d';
   }
 
-  String _getAQIDescription(int aqi) {
+  /// Official Central Pollution Control Board (CPCB) India AQI Classification:
+  /// 0–50: Good
+  /// 51–100: Satisfactory
+  /// 101–200: Moderate
+  /// 201–300: Poor
+  /// 301–400: Very Poor
+  /// 401–500: Severe
+  static String _getAQIDescription(int aqi) {
     if (aqi <= 50) return 'Good';
-    if (aqi <= 100) return 'Moderate';
-    if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
-    if (aqi <= 200) return 'Unhealthy';
-    if (aqi <= 300) return 'Very Unhealthy';
-    return 'Hazardous';
+    if (aqi <= 100) return 'Satisfactory';
+    if (aqi <= 200) return 'Moderate';
+    if (aqi <= 300) return 'Poor';
+    if (aqi <= 400) return 'Very Poor';
+    return 'Severe';
   }
 
-  String _getAQIColor(int aqi) {
-    if (aqi <= 50) return '#00E400'; // Green
-    if (aqi <= 100) return '#FFFF00'; // Yellow
-    if (aqi <= 150) return '#FF7E00'; // Orange
-    if (aqi <= 200) return '#FF0000'; // Red
-    if (aqi <= 300) return '#8F3F97'; // Purple
-    return '#7E0023'; // Maroon
+  static String _getAQIColor(int aqi) {
+    if (aqi <= 50) return '#10B981'; // Green
+    if (aqi <= 100) return '#84CC16'; // Light Green
+    if (aqi <= 200) return '#F59E0B'; // Amber / Yellow
+    if (aqi <= 300) return '#F97316'; // Orange
+    if (aqi <= 400) return '#EF4444'; // Red
+    return '#881337'; // Maroon
   }
 }

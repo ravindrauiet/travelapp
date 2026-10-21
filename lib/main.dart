@@ -10,6 +10,7 @@ import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 import 'services/station_tracker_service.dart';
 import 'screens/professional_home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'screens/metro/professional_metro_home_screen.dart';
 import 'screens/metro/fare_calculator_screen.dart';
 import 'screens/metro/route_finder_screen.dart';
@@ -72,8 +73,12 @@ class MetromateApp extends StatelessWidget {
 }
 
 final GoRouter _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: '/',
       builder: (context, state) => const ProfessionalHomeScreen().withAppScaffold(useCustomScaffold: true),
@@ -88,7 +93,10 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/metro/route-finder',
-      builder: (context, state) => const MetroRouteFinderScreen().withAppScaffold(),
+      builder: (context, state) => MetroRouteFinderScreen(
+        initialFrom: state.uri.queryParameters['from'],
+        initialTo: state.uri.queryParameters['to'],
+      ).withAppScaffold(),
     ),
     GoRoute(
       path: '/metro/live-updates',
@@ -115,7 +123,10 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/bus/route-finder',
-      builder: (context, state) => const BusRouteFinderScreen().withAppScaffold(),
+      builder: (context, state) => BusRouteFinderScreen(
+        initialFrom: state.uri.queryParameters['from'],
+        initialTo: state.uri.queryParameters['to'],
+      ).withAppScaffold(),
     ),
     GoRoute(
       path: '/bus/stop-locator',

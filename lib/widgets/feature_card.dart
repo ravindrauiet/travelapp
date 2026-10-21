@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import 'ui_kit.dart';
 
 class FeatureCard extends StatefulWidget {
   final String title;
@@ -51,95 +52,97 @@ class _FeatureCardState extends State<FeatureCard>
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final radius = BorderRadius.circular(22);
+
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Card(
-            elevation: 6,
-            shadowColor: widget.color.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: p.card,
+              borderRadius: radius,
+              border: Border.all(color: widget.color.withValues(alpha: p.isDark ? 0.35 : 0.18)),
+              boxShadow: p.isDark ? null : AppTheme.glow(widget.color, alpha: 0.12),
             ),
-            child: InkWell(
-              onTap: () {
-                _animationController.forward().then((_) {
-                  _animationController.reverse();
-                  widget.onTap();
-                });
-              },
-              onTapDown: (_) => _animationController.forward(),
-              onTapUp: (_) => _animationController.reverse(),
-              onTapCancel: () => _animationController.reverse(),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: EdgeInsets.all(ResponsiveHelper.isMobile(context) ? 12 : 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.color.withOpacity(0.1),
-                      widget.color.withOpacity(0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: () {
+                  _animationController.forward().then((_) {
+                    _animationController.reverse();
+                    widget.onTap();
+                  });
+                },
+                onTapDown: (_) => _animationController.forward(),
+                onTapUp: (_) => _animationController.reverse(),
+                onTapCancel: () => _animationController.reverse(),
+                borderRadius: radius,
+                child: Container(
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
+                  decoration: BoxDecoration(
+                    borderRadius: radius,
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.color.withValues(alpha: p.isDark ? 0.18 : 0.10),
+                        widget.color.withValues(alpha: 0.0),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      flex: 2,
-                      child: Container(
-                        padding: EdgeInsets.all(ResponsiveHelper.isMobile(context) ? 8 : 12),
-                        decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: widget.color.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          size: ResponsiveHelper.isMobile(context) ? 24 : 28,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        flex: 2,
+                        child: IconBubble(
+                          icon: widget.icon,
                           color: widget.color,
+                          filled: true,
+                          size: isMobile ? 44 : 52,
+                          radius: 16,
                         ),
                       ),
-                    ),
-                    SizedBox(height: ResponsiveHelper.isMobile(context) ? 8 : 12),
-                    Flexible(
-                      flex: 1,
-                      child: Text(
-                        widget.title,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: widget.color,
-                          fontWeight: FontWeight.w600,
-                          fontSize: ResponsiveHelper.isMobile(context) ? 12 : 14,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (widget.subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      SizedBox(height: isMobile ? 8 : 12),
                       Flexible(
                         flex: 1,
                         child: Text(
-                          widget.subtitle!,
+                          widget.title,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: ResponsiveHelper.isMobile(context) ? 10 : 12,
+                          style: TextStyle(
+                            color: p.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: isMobile ? 12.5 : 14,
+                            letterSpacing: -0.2,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (widget.subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Flexible(
+                          flex: 1,
+                          child: Text(
+                            widget.subtitle!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: p.textTertiary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: isMobile ? 10 : 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -149,4 +152,3 @@ class _FeatureCardState extends State<FeatureCard>
     );
   }
 }
-

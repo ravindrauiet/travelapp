@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import 'ui_kit.dart';
 
 class CompactFeatureCard extends StatefulWidget {
   final String title;
@@ -51,99 +52,94 @@ class _CompactFeatureCardState extends State<CompactFeatureCard>
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final isMobile = ResponsiveHelper.isMobile(context);
-    final isTablet = ResponsiveHelper.isTablet(context);
-    
+    final radius = BorderRadius.circular(20);
+
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Card(
-            elevation: 4,
-            shadowColor: widget.color.withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: p.card,
+              borderRadius: radius,
+              border: Border.all(color: widget.color.withValues(alpha: p.isDark ? 0.3 : 0.16)),
+              boxShadow: p.isDark ? null : AppTheme.softShadow,
             ),
-            child: InkWell(
-              onTap: () {
-                _animationController.forward().then((_) {
-                  _animationController.reverse();
-                  widget.onTap();
-                });
-              },
-              onTapDown: (_) => _animationController.forward(),
-              onTapUp: (_) => _animationController.reverse(),
-              onTapCancel: () => _animationController.reverse(),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: EdgeInsets.all(isMobile ? 6 : 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.color.withOpacity(0.08),
-                      widget.color.withOpacity(0.04),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: () {
+                  _animationController.forward().then((_) {
+                    _animationController.reverse();
+                    widget.onTap();
+                  });
+                },
+                onTapDown: (_) => _animationController.forward(),
+                onTapUp: (_) => _animationController.reverse(),
+                onTapCancel: () => _animationController.reverse(),
+                borderRadius: radius,
+                child: Container(
+                  padding: EdgeInsets.all(isMobile ? 6 : 8),
+                  decoration: BoxDecoration(
+                    borderRadius: radius,
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.color.withValues(alpha: p.isDark ? 0.16 : 0.09),
+                        widget.color.withValues(alpha: 0.0),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Icon container
-                    Container(
-                      width: isMobile ? 28 : 32,
-                      height: isMobile ? 28 : 32,
-                      decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: widget.color.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        size: isMobile ? 14 : 16,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Icon bubble
+                      IconBubble(
+                        icon: widget.icon,
                         color: widget.color,
+                        filled: true,
+                        size: isMobile ? 30 : 34,
+                        radius: 10,
                       ),
-                    ),
-                    
-                    SizedBox(height: isMobile ? 3 : 4),
-                    
-                    // Title
-                    Text(
-                      widget.title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: widget.color,
-                        fontWeight: FontWeight.w600,
-                        fontSize: isMobile ? 9 : 11,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    // Subtitle (if provided)
-                    if (widget.subtitle != null) ...[
-                      SizedBox(height: isMobile ? 2 : 4),
+
+                      SizedBox(height: isMobile ? 4 : 6),
+
+                      // Title
                       Text(
-                        widget.subtitle!,
+                        widget.title,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                          fontSize: isMobile ? 9 : 10,
-                          height: 1.1,
+                          color: p.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: isMobile ? 9.5 : 11,
+                          height: 1.2,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+
+                      // Subtitle (if provided)
+                      if (widget.subtitle != null) ...[
+                        SizedBox(height: isMobile ? 2 : 4),
+                        Text(
+                          widget.subtitle!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: p.textTertiary,
+                            fontSize: isMobile ? 9 : 10,
+                            height: 1.1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

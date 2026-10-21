@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/game_2048.dart';
 import '../../widgets/game_bottom_navigation.dart';
+import '../../widgets/ui_kit.dart';
+import 'game_chrome.dart';
 import '../../utils/app_theme.dart';
 
 class Game2048Screen extends StatefulWidget {
@@ -105,126 +107,64 @@ class _Game2048ScreenState extends State<Game2048Screen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('2048 Game'),
-        backgroundColor: AppTheme.metroBlue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(_isGameRunning ? Icons.pause : Icons.play_arrow),
-            onPressed: _isGameRunning ? _pauseGame : _startGame,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _restartGame,
-          ),
-        ],
-      ),
-      body: Focus(
-        autofocus: true,
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent) {
-            _handleKeyPress(event.logicalKey);
-          }
-          return KeyEventResult.handled;
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.metroBlue.withOpacity(0.1),
-                AppTheme.metroPurple.withOpacity(0.1),
-              ],
-            ),
-          ),
+    final p = context.palette;
+    final showStatus = _game.gameState == Game2048State.gameOver ||
+        _game.gameState == Game2048State.won;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              _handleKeyPress(event.logicalKey);
+            }
+            return KeyEventResult.handled;
+          },
           child: Column(
             children: [
               // Score board at top
               _buildScoreBoard(),
               // Game board in center
               Expanded(
-                child: _buildGameBoard(),
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _buildGameBoard()),
+                    if (showStatus) GameOverlay(child: _buildGameStatus()),
+                  ],
+                ),
               ),
               // Controls at bottom
               _buildControls(),
-              // Game status
-              _buildGameStatus(),
             ],
           ),
         ),
+        bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
       ),
-      bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
     );
   }
 
   Widget _buildScoreBoard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.orange[50]!, Colors.red[50]!],
+    return GameHeader(
+      title: '2048',
+      gradient: GamesPalette.amber,
+      actions: [
+        HeaderIconButton(
+          icon: _isGameRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          tooltip: _isGameRunning ? 'Pause' : 'Play',
+          onTap: _isGameRunning ? _pauseGame : _startGame,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange[300]!, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildScoreCard('Score', _game.score.toString(), Colors.orange),
-          _buildScoreCard('Best', _game.bestScore.toString(), Colors.red),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+        HeaderIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Restart',
+          onTap: _restartGame,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      ],
+      stats: [
+        GameStat('Score', _game.score.toString(), Icons.star_rounded),
+        GameStat('Best', _game.bestScore.toString(), Icons.emoji_events_rounded),
+      ],
     );
   }
 
@@ -305,34 +245,14 @@ class _Game2048ScreenState extends State<Game2048Screen> {
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         children: [
           // Touch instruction
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.orange[100]!, Colors.red[100]!],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange[300]!, width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.touch_app, color: Colors.orange[600], size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Swipe to move tiles',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.orange[700],
-                  ),
-                ),
-              ],
-            ),
+          const GameHintBar(
+            icon: Icons.swipe_rounded,
+            text: 'Swipe to move tiles',
+            color: AppTheme.metroOrange,
           ),
           const SizedBox(height: 12),
           // Action buttons
@@ -341,18 +261,18 @@ class _Game2048ScreenState extends State<Game2048Screen> {
               Expanded(
                 child: _buildActionButton(
                   _isGameRunning ? 'Pause' : 'Play',
-                  _isGameRunning ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  _isGameRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
                   _isGameRunning ? _pauseGame : _startGame,
-                  _isGameRunning ? Colors.orange : Colors.green,
+                  _isGameRunning ? GamesPalette.amber : AppTheme.emeraldGradient,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
                   'Restart',
-                  Icons.refresh,
+                  Icons.refresh_rounded,
                   _restartGame,
-                  Colors.red,
+                  AppTheme.sunsetGradient,
                 ),
               ),
             ],
@@ -362,97 +282,36 @@ class _Game2048ScreenState extends State<Game2048Screen> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, Color color) {
-    return Container(
-      height: 40,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 6,
-          shadowColor: color.withOpacity(0.4),
-        ),
-      ),
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, LinearGradient gradient) {
+    return GradientButton(
+      label: text,
+      icon: icon,
+      onPressed: onPressed,
+      gradient: gradient,
     );
   }
 
   Widget _buildGameStatus() {
     if (_game.gameState == Game2048State.gameOver) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red[300]!, width: 2),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.sentiment_very_dissatisfied, color: Colors.red[600], size: 48),
-            const SizedBox(height: 8),
-            Text(
-              'Game Over!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.red[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Final Score: ${_game.score}',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.red[600],
-              ),
-            ),
-          ],
-        ),
+      return GameStatusCard(
+        icon: Icons.sentiment_very_dissatisfied_rounded,
+        title: 'Game Over!',
+        lines: ['Final Score: ${_game.score}'],
+        color: AppTheme.errorColor,
+        actionLabel: 'Restart',
+        actionIcon: Icons.replay_rounded,
+        onAction: _restartGame,
       );
     } else if (_game.gameState == Game2048State.won) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green[300]!, width: 2),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.celebration, color: Colors.green[600], size: 48),
-            const SizedBox(height: 8),
-            Text(
-              'You Win!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'You reached 2048!',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.green[600],
-              ),
-            ),
-          ],
-        ),
+      return GameStatusCard(
+        icon: Icons.celebration_rounded,
+        title: 'You Win!',
+        lines: const ['You reached 2048!'],
+        color: AppTheme.successColor,
+        actionLabel: 'Play Again',
+        actionIcon: Icons.replay_rounded,
+        onAction: _restartGame,
+        actionGradient: AppTheme.emeraldGradient,
       );
     }
     return const SizedBox.shrink();

@@ -46,6 +46,9 @@ dependencies:
   intl: ^0.18.1
   url_launcher: ^6.2.1
   permission_handler: ^11.0.1
+  gtfs_realtime_bindings: ^1.2.0
+  protobuf: ^6.1.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
@@ -62,13 +65,18 @@ flutter:
     - assets/gtfs_data/
     - assets/animations/
   
-  # fonts:
-  #   - family: Poppins
-  #     fonts:
-  #       - asset: assets/fonts/Poppins-Regular.ttf
-  #       - asset: assets/fonts/Poppins-Medium.ttf
-  #         weight: 500
-  #       - asset: assets/fonts/Poppins-SemiBold.ttf
-  #         weight: 600
-  #       - asset: assets/fonts/Poppins-Bold.ttf
-  #         weight: 700
+  # Plus Jakarta Sans (SIL Open Font License, see assets/fonts/OFL.txt)
+  fonts:
+    - family: Jakarta
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 900

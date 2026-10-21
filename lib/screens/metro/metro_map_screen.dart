@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +7,7 @@ import '../../providers/metro_provider.dart';
 import '../../models/metro_station.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/bottom_navigation.dart';
+import '../../widgets/ui_kit.dart';
 
 class MetroMapScreen extends StatefulWidget {
   const MetroMapScreen({super.key});
@@ -130,61 +132,111 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
-      appBar: AppBar(
-        title: const Text(
-          'Delhi Metro Map & Lines',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF2563EB)),
-            tooltip: 'View HD PDF',
-            onPressed: () => context.push('/metro/pdf-viewer'),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFFFF4D2D), // Zomato / Swiggy energetic brand color
-          unselectedLabelColor: const Color(0xFF64748B),
-          indicatorColor: const Color(0xFFFF4D2D),
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-          tabs: const [
-            Tab(text: 'Network Explorer', icon: Icon(Icons.hub_rounded, size: 20)),
-            Tab(text: 'Lines Directory', icon: Icon(Icons.linear_scale_rounded, size: 20)),
+    final p = context.palette;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: Column(
+          children: [
+            GradientHeader(
+              title: 'Metro Map & Lines',
+              subtitle: 'Explore every station and corridor',
+              icon: Icons.hub_rounded,
+              gradient: AppTheme.royalGradient,
+              actions: [
+                HeaderIconButton(
+                  icon: Icons.picture_as_pdf_rounded,
+                  tooltip: 'View HD PDF',
+                  onTap: () => context.push('/metro/pdf-viewer'),
+                ),
+              ],
+              bottom: _buildSegmentedTabs(),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildNetworkExplorerTab(),
+                  _buildLinesDirectoryTab(),
+                ],
+              ),
+            ),
           ],
         ),
+        bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
       ),
-      body: TabBarView(
+    );
+  }
+
+  Widget _buildSegmentedTabs() {
+    Tab tab(IconData icon, String label) => Tab(
+          height: 40,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17),
+              const SizedBox(width: 6),
+              Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      child: TabBar(
         controller: _tabController,
-        children: [
-          _buildNetworkExplorerTab(),
-          _buildLinesDirectoryTab(),
+        indicator: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.brandNight.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: AppTheme.brandViolet,
+        unselectedLabelColor: Colors.white,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, fontFamily: AppTheme.fontFamily),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, fontFamily: AppTheme.fontFamily),
+        splashBorderRadius: BorderRadius.circular(12),
+        tabs: [
+          tab(Icons.hub_rounded, 'Network Explorer'),
+          tab(Icons.linear_scale_rounded, 'Lines Directory'),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
   // ── Tab 1: Network Explorer & Station Navigator ─────────────────────────────
 
   Widget _buildNetworkExplorerTab() {
+    final p = context.palette;
     return Consumer<MetroProvider>(
       builder: (context, metroProvider, _) {
         if (metroProvider.isLoading && metroProvider.stations.isEmpty) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: p.primary),
+                const SizedBox(height: 14),
+                Text(
+                  'Loading metro network…',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: p.textSecondary),
+                ),
+              ],
+            ),
+          );
         }
 
         final allStations = metroProvider.stations;
@@ -198,108 +250,122 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
 
         return Column(
           children: [
-            // Top Interactive Line Filter Bar
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Column(
-                children: [
-                  // Search Bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search station on map...',
-                          hintStyle: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                          prefixIcon: Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                      ),
-                    ),
+            const SizedBox(height: 14),
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: p.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: p.border.withValues(alpha: 0.8)),
+                  boxShadow: p.shadow,
+                ),
+                child: TextField(
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: p.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Search station on map...',
+                    hintStyle: TextStyle(fontSize: 13.5, color: p.textTertiary),
+                    prefixIcon: Icon(Icons.search_rounded, size: 20, color: p.primary),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  const SizedBox(height: 10),
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
-                  // Line Selector Pills
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        _buildLineFilterChip('All', null),
-                        ..._metroLines.map((l) {
-                          return _buildLineFilterChip(l['name'] as String, l['color'] as Color);
-                        }),
-                      ],
-                    ),
-                  ),
+            // Line Selector Pills
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _buildLineFilterChip('All', null),
+                  ..._metroLines.map((l) {
+                    return _buildLineFilterChip(l['name'] as String, l['color'] as Color);
+                  }),
                 ],
               ),
             ),
 
             // Official DMRC HD Map Launch Strip
-            Container(
+            AppCard(
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
+              padding: const EdgeInsets.all(14),
+              radius: 20,
+              gradient: AppTheme.heroGradient,
+              onTap: _openOfficialDMRCMap,
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
                     ),
-                    child: const Icon(Icons.map_rounded, color: Colors.white, size: 20),
+                    child: const Icon(Icons.map_rounded, color: Colors.white, size: 21),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Official DMRC Network Map',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
                         ),
                         Text(
                           'View high-definition zoomable map of all 12 lines',
-                          style: TextStyle(fontSize: 10, color: Colors.white70),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.75)),
                         ),
                       ],
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: _openOfficialDMRCMap,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF4D2D),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.sunsetGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: AppTheme.glow(AppTheme.brandRose, alpha: 0.35),
                     ),
-                    child: const Text('OPEN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                    child: const Text(
+                      'OPEN',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                    ),
                   ),
+                ],
+              ),
+            ),
+
+            // Station count
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+              child: Row(
+                children: [
+                  Text(
+                    '${filteredStations.length} station${filteredStations.length == 1 ? '' : 's'}',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textSecondary),
+                  ),
+                  const Spacer(),
+                  if (_selectedLine != 'All')
+                    TagPill(label: _selectedLine.toUpperCase(), color: _getLineColor(_selectedLine)),
                 ],
               ),
             ),
@@ -307,17 +373,12 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
             // Station List with Visual Route Rail
             Expanded(
               child: filteredStations.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'No stations found',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                          ),
-                        ],
+                  ? SingleChildScrollView(
+                      child: EmptyState(
+                        title: 'No stations found',
+                        message: _searchQuery.isNotEmpty
+                            ? 'Nothing matches "$_searchQuery". Try a different name or line.'
+                            : 'No stations available for this line yet.',
                       ),
                     )
                   : ListView.builder(
@@ -337,41 +398,49 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
   }
 
   Widget _buildLineFilterChip(String name, Color? color) {
+    final p = context.palette;
     final isSelected = _selectedLine == name;
+    final accent = color ?? p.primary;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        onTap: () => setState(() => _selectedLine = name),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() => _selectedLine = name),
+          borderRadius: BorderRadius.circular(20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? accent : p.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isSelected ? accent : p.border),
+              boxShadow: isSelected ? AppTheme.glow(accent, alpha: 0.3) : null,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (color != null) ...[
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (color != null) ...[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? Colors.white : p.textSecondary,
+                  ),
                 ),
-                const SizedBox(width: 6),
               ],
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : const Color(0xFF334155),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -379,36 +448,17 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
   }
 
   Widget _buildStationCard(MetroStation station) {
+    final p = context.palette;
     final lineColor = _getLineColor(station.line);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+      radius: 20,
       child: Row(
         children: [
           // Visual line colored dot
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: lineColor.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: lineColor, width: 2),
-            ),
-            child: Icon(Icons.train_rounded, color: lineColor, size: 16),
-          ),
+          IconBubble(icon: Icons.train_rounded, color: lineColor, size: 40, radius: 12),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -416,55 +466,70 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
               children: [
                 Text(
                   station.name,
-                  style: const TextStyle(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: p.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      constraints: const BoxConstraints(maxWidth: 190),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: lineColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        color: p.tint(lineColor),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(
-                        station.line,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: lineColor,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(color: lineColor, shape: BoxShape.circle),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              station.line,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: lineColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (station.isInterchange) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'INTERCHANGE',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF059669),
-                          ),
-                        ),
+                    if (station.isInterchange)
+                      const TagPill(
+                        label: 'INTERCHANGE',
+                        color: AppTheme.warningColor,
+                        icon: Icons.swap_horiz_rounded,
                       ),
-                    ],
                   ],
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.directions_rounded, color: Color(0xFF2563EB), size: 22),
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: p.tint(AppTheme.accentColor),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.directions_rounded, color: AppTheme.accentColor, size: 20),
+            ),
             tooltip: 'Plan route from this station',
             onPressed: () => context.push('/metro/route-finder'),
           ),
@@ -476,112 +541,115 @@ class _MetroMapScreenState extends State<MetroMapScreen> with SingleTickerProvid
   // ── Tab 2: Lines Directory & Infrastructure ─────────────────────────────────
 
   Widget _buildLinesDirectoryTab() {
+    final p = context.palette;
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       itemCount: _metroLines.length,
       itemBuilder: (context, index) {
         final line = _metroLines[index];
         final color = line['color'] as Color;
 
-        return Container(
+        return AppCard(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        line['name'] as String,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
+          padding: EdgeInsets.zero,
+          radius: 22,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.45)]),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${line['stations']} Stations',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                line['terminals'] as String,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Row(
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'Normal Operational Frequency',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.w600),
+                      Row(
+                        children: [
+                          IconBubble(icon: Icons.train_rounded, color: color, filled: true, size: 40, radius: 12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  line['name'] as String,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: p.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  line['terminals'] as String,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: p.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          TagPill(label: '${line['stations']} STN', color: color),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 15),
+                          const SizedBox(width: 5),
+                          const Expanded(
+                            child: Text(
+                              'Normal Operational Frequency',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11.5, color: AppTheme.successColor, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedLine = line['name'] as String;
+                                _tabController.animateTo(0);
+                              });
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: color,
+                              backgroundColor: p.tint(color),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, fontFamily: AppTheme.fontFamily),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('View Stations'),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 14),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedLine = line['name'] as String;
-                        _tabController.animateTo(0);
-                      });
-                    },
-                    child: const Text(
-                      'View Stations ➔',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },

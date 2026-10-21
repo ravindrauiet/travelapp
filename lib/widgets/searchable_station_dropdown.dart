@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/metro_station.dart';
+import '../utils/app_theme.dart';
+import 'ui_kit.dart';
 
 class SearchableStationDropdown extends StatefulWidget {
   final List<MetroStation> stations;
@@ -8,6 +10,9 @@ class SearchableStationDropdown extends StatefulWidget {
   final IconData prefixIcon;
   final ValueChanged<String?> onChanged;
 
+  /// Optional accent for the leading icon bubble and focus ring.
+  final Color? accentColor;
+
   const SearchableStationDropdown({
     super.key,
     required this.stations,
@@ -15,6 +20,7 @@ class SearchableStationDropdown extends StatefulWidget {
     required this.hintText,
     required this.prefixIcon,
     required this.onChanged,
+    this.accentColor,
   });
 
   @override
@@ -32,6 +38,7 @@ class _SearchableStationDropdownState extends State<SearchableStationDropdown> {
     super.initState();
     _selectedStation = widget.selectedStation;
     _filteredStations = widget.stations;
+    _updateSearchController();
     _searchController.addListener(_filterStations);
   }
 
@@ -56,17 +63,43 @@ class _SearchableStationDropdownState extends State<SearchableStationDropdown> {
     }
   }
 
+  /// Relevance-based station search:
+  /// Matches on Station Name rank MUCH higher than matches on Line Name.
+  /// (e.g. typing "Airport" ranks "IGI Airport" first, not "Shivaji Stadium" on Airport Express)
   void _filterStations() {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.trim().toLowerCase();
     setState(() {
       if (query.isEmpty) {
         _filteredStations = widget.stations;
       } else {
-        _filteredStations = widget.stations
-            .where((station) => 
-                station.name.toLowerCase().contains(query) ||
-                station.line.toLowerCase().contains(query))
-            .toList();
+        final matches = <MapEntry<MetroStation, int>>[];
+
+        for (final station in widget.stations) {
+          final name = station.name.toLowerCase();
+          final line = station.line.toLowerCase();
+          int score = 0;
+
+          if (name == query) {
+            score = 1000;
+          } else if (name.startsWith(query)) {
+            score = 600;
+          } else if (name.split(' ').any((w) => w.startsWith(query))) {
+            score = 400;
+          } else if (name.contains(query)) {
+            score = 250;
+          } else if (line.startsWith(query)) {
+            score = 50;
+          } else if (line.contains(query)) {
+            score = 20;
+          }
+
+          if (score > 0) {
+            matches.add(MapEntry(station, score));
+          }
+        }
+
+        matches.sort((a, b) => b.value.compareTo(a.value));
+        _filteredStations = matches.map((e) => e.key).toList();
       }
     });
   }
@@ -97,31 +130,63 @@ class _SearchableStationDropdownState extends State<SearchableStationDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final accent = widget.accentColor ?? p.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Search Input Field
         TextFormField(
           controller: _searchController,
+          style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: p.textPrimary),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            prefixIcon: Icon(widget.prefixIcon),
+            hintStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: p.textTertiary),
+            filled: true,
+            fillColor: p.cardAlt,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: p.tint(accent),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(widget.prefixIcon, size: 18, color: accent),
+              ),
+            ),
             suffixIcon: _selectedStation != null
                 ? IconButton(
-                    icon: const Icon(Icons.clear),
+                    icon: Icon(Icons.close_rounded, color: p.textTertiary, size: 20),
+                    tooltip: 'Clear selection',
                     onPressed: _clearSelection,
                   )
                 : IconButton(
-                    icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+                    icon: Icon(
+                      _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: p.textSecondary,
+                    ),
+                    tooltip: _isExpanded ? 'Collapse list' : 'Expand list',
                     onPressed: () {
                       setState(() {
                         _isExpanded = !_isExpanded;
                       });
                     },
                   ),
-            border: const OutlineInputBorder(),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: p.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: p.border.withValues(alpha: 0.8)),
+            ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Theme.of(context).primaryColor),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: accent, width: 1.8),
             ),
           ),
           onTap: () {
@@ -131,109 +196,136 @@ class _SearchableStationDropdownState extends State<SearchableStationDropdown> {
           },
           readOnly: false,
         ),
-        
+
         // Dropdown List
         if (_isExpanded && _filteredStations.isNotEmpty)
           Container(
-            margin: const EdgeInsets.only(top: 4),
+            margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
+              border: Border.all(color: p.border),
+              borderRadius: BorderRadius.circular(18),
+              color: p.card,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  color: AppTheme.brandNight.withValues(alpha: p.isDark ? 0.4 : 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
-            constraints: const BoxConstraints(maxHeight: 200),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _filteredStations.length,
-              itemBuilder: (context, index) {
-                final station = _filteredStations[index];
-                final isSelected = _selectedStation == station.name;
-                
-                return InkWell(
-                  onTap: () => _selectStation(station),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue.shade50 : Colors.transparent,
-                      border: index < _filteredStations.length - 1
-                          ? Border(
-                              bottom: BorderSide(color: Colors.grey.shade200),
-                            )
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Color(int.parse(station.lineColor.replaceFirst('#', '0xff'))),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+            constraints: const BoxConstraints(maxHeight: 240),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                itemCount: _filteredStations.length,
+                itemBuilder: (context, index) {
+                  final station = _filteredStations[index];
+                  final isSelected = _selectedStation == station.name;
+
+                  Color tagColor = AppTheme.metroBlue;
+                  try {
+                    tagColor = Color(int.parse(station.lineColor.replaceFirst('#', '0xff')));
+                  } catch (_) {}
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Material(
+                      color: isSelected ? p.tint(accent) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        onTap: () => _selectStation(station),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          child: Row(
                             children: [
-                              Text(
-                                station.name,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                  color: isSelected ? Colors.blue.shade700 : Colors.black87,
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: p.tint(tagColor),
+                                  borderRadius: BorderRadius.circular(9),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                station.line,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                                child: Center(
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: tagColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      station.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: isSelected ? accent : p.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      station.line,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: tagColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: accent,
+                                  size: 18,
+                                ),
                             ],
                           ),
                         ),
-                        if (isSelected)
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.blue.shade700,
-                            size: 20,
-                          ),
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
-        
+
         // No results message
         if (_isExpanded && _filteredStations.isEmpty && _searchController.text.isNotEmpty)
           Container(
-            margin: const EdgeInsets.only(top: 4),
+            margin: const EdgeInsets.only(top: 6),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade50,
+              border: Border.all(color: p.border),
+              borderRadius: BorderRadius.circular(16),
+              color: p.card,
             ),
-            child: const Text(
-              'No stations found matching your search',
-              style: TextStyle(
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
+            child: Row(
+              children: [
+                Icon(Icons.search_off_rounded, size: 18, color: p.textTertiary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No metro stations match your query',
+                    style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+              ],
             ),
           ),
       ],

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../models/flappy_bird.dart';
 import '../../widgets/game_bottom_navigation.dart';
+import '../../widgets/ui_kit.dart';
+import 'game_chrome.dart';
 import '../../utils/app_theme.dart';
 
 class FlappyBirdScreen extends StatefulWidget {
@@ -70,118 +73,63 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flappy Bird'),
-        backgroundColor: AppTheme.metroBlue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(_isGameRunning ? Icons.pause : Icons.play_arrow),
-            onPressed: _isGameRunning ? _pauseGame : _startGame,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _restartGame,
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        onTap: _handleTap,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.blue[300]!,
-                Colors.blue[100]!,
-              ],
-            ),
-          ),
-          child: Column(
-            children: [
-              // Score board at top
-              _buildScoreBoard(),
-              // Game area
-              Expanded(
-                child: _buildGameArea(),
+    final p = context.palette;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: Column(
+          children: [
+            // Score board at top
+            _buildScoreBoard(),
+            Expanded(
+              child: GestureDetector(
+                onTap: _handleTap,
+                child: Column(
+                  children: [
+                    // Game area
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: _buildGameArea(),
+                        ),
+                      ),
+                    ),
+                    // Controls at bottom
+                    _buildControls(),
+                  ],
+                ),
               ),
-              // Controls at bottom
-              _buildControls(),
-            ],
-          ),
+            ),
+          ],
         ),
+        bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
       ),
-      bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
     );
   }
 
   Widget _buildScoreBoard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green[50]!, Colors.blue[50]!],
+    return GameHeader(
+      title: 'Sky Hopper',
+      gradient: AppTheme.oceanGradient,
+      actions: [
+        HeaderIconButton(
+          icon: _isGameRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          tooltip: _isGameRunning ? 'Pause' : 'Play',
+          onTap: _isGameRunning ? _pauseGame : _startGame,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green[300]!, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildScoreCard('Score', _game.score.toString(), Colors.green),
-          _buildScoreCard('Best', _game.bestScore.toString(), Colors.blue),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+        HeaderIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Restart',
+          onTap: _restartGame,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      ],
+      stats: [
+        GameStat('Score', _game.score.toString(), Icons.star_rounded),
+        GameStat('Best', _game.bestScore.toString(), Icons.emoji_events_rounded),
+      ],
     );
   }
 
@@ -280,34 +228,44 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
 
   Widget _buildStartScreen() {
     return Container(
-      color: Colors.black.withOpacity(0.5),
+      color: AppTheme.brandNight.withValues(alpha: 0.45),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.play_circle_filled,
-              color: Colors.white,
-              size: 80,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tap to Start',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.oceanGradient,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 3),
+                  boxShadow: AppTheme.glow(AppTheme.metroAqua, alpha: 0.45),
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 52),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Tap to make the bird fly!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+              const SizedBox(height: 16),
+              const Text(
+                'Tap to Start',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                'Tap to make the bird fly!',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -315,42 +273,17 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
 
   Widget _buildGameOverOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.7),
+      color: AppTheme.brandNight.withValues(alpha: 0.6),
+      padding: const EdgeInsets.all(16),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.sentiment_very_dissatisfied,
-              color: Colors.red[400],
-              size: 80,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Game Over!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Score: ${_game.score}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tap to restart',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-          ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: GameStatusCard(
+            icon: Icons.sentiment_very_dissatisfied_rounded,
+            title: 'Game Over!',
+            lines: ['Score: ${_game.score}', 'Tap to restart'],
+            color: AppTheme.errorColor,
+          ),
         ),
       ),
     );
@@ -358,34 +291,14 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         children: [
           // Touch instruction
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green[100]!, Colors.blue[100]!],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green[300]!, width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.touch_app, color: Colors.green[600], size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Tap to make bird fly',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green[700],
-                  ),
-                ),
-              ],
-            ),
+          const GameHintBar(
+            icon: Icons.touch_app_rounded,
+            text: 'Tap to make bird fly',
+            color: AppTheme.infoColor,
           ),
           const SizedBox(height: 12),
           // Action buttons
@@ -394,18 +307,18 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
               Expanded(
                 child: _buildActionButton(
                   _isGameRunning ? 'Pause' : 'Play',
-                  _isGameRunning ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  _isGameRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
                   _isGameRunning ? _pauseGame : _startGame,
-                  _isGameRunning ? Colors.orange : Colors.green,
+                  _isGameRunning ? GamesPalette.amber : AppTheme.oceanGradient,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
                   'Restart',
-                  Icons.refresh,
+                  Icons.refresh_rounded,
                   _restartGame,
-                  Colors.red,
+                  AppTheme.sunsetGradient,
                 ),
               ),
             ],
@@ -415,30 +328,12 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> with TickerProvider
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, Color color) {
-    return Container(
-      height: 40,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 6,
-          shadowColor: color.withOpacity(0.4),
-        ),
-      ),
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, LinearGradient gradient) {
+    return GradientButton(
+      label: text,
+      icon: icon,
+      onPressed: onPressed,
+      gradient: gradient,
     );
   }
 }

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../models/snake_game.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/game_bottom_navigation.dart';
+import '../../widgets/ui_kit.dart';
+import 'game_chrome.dart';
 
 class SnakeGameScreen extends StatefulWidget {
   const SnakeGameScreen({super.key});
@@ -126,111 +128,63 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Snake Game'),
-        backgroundColor: AppTheme.metroGreen,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(_isGameRunning ? Icons.pause : Icons.play_arrow),
-            onPressed: _isGameRunning ? _pauseGame : _startGame,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _restartGame,
-          ),
-        ],
-      ),
-      body: Focus(
-        autofocus: true,
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent) {
-            _handleKeyPress(event.logicalKey);
-          }
-          return KeyEventResult.handled;
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.metroGreen.withOpacity(0.1),
-                AppTheme.metroBlue.withOpacity(0.1),
-              ],
-            ),
-          ),
+    final p = context.palette;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              _handleKeyPress(event.logicalKey);
+            }
+            return KeyEventResult.handled;
+          },
           child: Column(
             children: [
               _buildScoreBoard(),
               Expanded(
-                child: Center(
-                  child: _buildGameBoard(),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: _buildGameBoard(),
+                    ),
+                    if (_game.gameState == GameState.gameOver || _game.gameState == GameState.paused)
+                      GameOverlay(child: _buildGameStatus()),
+                  ],
                 ),
               ),
               _buildControls(),
-              _buildGameStatus(),
             ],
           ),
         ),
+        bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
       ),
-      bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
     );
   }
 
   Widget _buildScoreBoard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildScoreCard('Score', _game.score.toString(), AppTheme.metroBlue),
-          _buildScoreCard('High Score', _game.highScore.toString(), AppTheme.metroRed),
-          _buildScoreCard('Length', _game.snake.length.toString(), AppTheme.metroGreen),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+    return GameHeader(
+      title: 'Snake Game',
+      gradient: AppTheme.emeraldGradient,
+      actions: [
+        HeaderIconButton(
+          icon: _isGameRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          tooltip: _isGameRunning ? 'Pause' : 'Play',
+          onTap: _isGameRunning ? _pauseGame : _startGame,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        HeaderIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Restart',
+          onTap: _restartGame,
+        ),
+      ],
+      stats: [
+        GameStat('Score', _game.score.toString(), Icons.star_rounded),
+        GameStat('Best', _game.highScore.toString(), Icons.emoji_events_rounded),
+        GameStat('Length', _game.snake.length.toString(), Icons.straighten_rounded),
+      ],
     );
   }
 
@@ -348,66 +302,34 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         children: [
           // Touch instruction
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green[100]!, Colors.green[50]!],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.green[300]!, width: 2),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.touch_app, color: Colors.green[600], size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Swipe to Control',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Swipe on the game board to move the snake',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.green[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+          const GameHintBar(
+            icon: Icons.swipe_rounded,
+            text: 'Swipe on the game board to move the snake',
+            color: AppTheme.metroGreen,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // Action buttons
           Row(
             children: [
               Expanded(
                 child: _buildActionButton(
                   _isGameRunning ? 'Pause' : 'Play',
-                  _isGameRunning ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  _isGameRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
                   _isGameRunning ? _pauseGame : _startGame,
-                  _isGameRunning ? Colors.orange : Colors.green,
+                  _isGameRunning ? GamesPalette.amber : AppTheme.emeraldGradient,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
                   'Restart',
-                  Icons.refresh,
+                  Icons.refresh_rounded,
                   _restartGame,
-                  Colors.red,
+                  AppTheme.sunsetGradient,
                 ),
               ),
             ],
@@ -424,9 +346,9 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: AppTheme.metroGreen.withOpacity(0.1),
+          color: context.palette.tint(AppTheme.metroGreen),
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: AppTheme.metroGreen.withOpacity(0.3)),
+          border: Border.all(color: AppTheme.metroGreen.withValues(alpha: 0.3)),
         ),
         child: Icon(
           icon,
@@ -437,115 +359,35 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, Color color) {
-    return Container(
-      height: 50,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 24),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          elevation: 8,
-          shadowColor: color.withOpacity(0.4),
-        ),
-      ),
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, LinearGradient gradient) {
+    return GradientButton(
+      label: text,
+      icon: icon,
+      onPressed: onPressed,
+      gradient: gradient,
     );
   }
 
   Widget _buildGameStatus() {
     if (_game.gameState == GameState.gameOver) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          color: AppTheme.metroRed.withOpacity(0.1),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.sentiment_very_dissatisfied,
-                  size: 48,
-                  color: AppTheme.metroRed,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Game Over!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.metroRed,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Final Score: ${_game.score}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _restartGame,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.metroRed,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Play Again'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return GameStatusCard(
+        icon: Icons.sentiment_very_dissatisfied_rounded,
+        title: 'Game Over!',
+        lines: ['Final Score: ${_game.score}'],
+        color: AppTheme.errorColor,
+        actionLabel: 'Play Again',
+        actionIcon: Icons.replay_rounded,
+        onAction: _restartGame,
       );
     } else if (_game.gameState == GameState.paused) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          color: AppTheme.metroBlue.withOpacity(0.1),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.pause_circle_outline,
-                  size: 48,
-                  color: AppTheme.metroBlue,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Game Paused',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.metroBlue,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _startGame,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.metroBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Resume'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return GameStatusCard(
+        icon: Icons.pause_rounded,
+        title: 'Game Paused',
+        color: AppTheme.metroGreen,
+        actionLabel: 'Resume',
+        actionIcon: Icons.play_arrow_rounded,
+        onAction: _startGame,
+        actionGradient: AppTheme.emeraldGradient,
       );
     }
 

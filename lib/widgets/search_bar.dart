@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import 'ui_kit.dart';
 
 class ModernSearchBar extends StatefulWidget {
   final String hintText;
@@ -62,6 +63,7 @@ class _ModernSearchBarState extends State<ModernSearchBar>
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
@@ -69,28 +71,22 @@ class _ModernSearchBarState extends State<ModernSearchBar>
           scale: _scaleAnimation.value,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: _isFocused
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                  ? AppTheme.glow(p.primary, alpha: 0.22)
+                  : p.shadow,
             ),
             child: TextField(
               controller: _textController,
               enabled: widget.enabled,
               onChanged: widget.onChanged,
               onSubmitted: widget.onSubmitted,
+              style: TextStyle(
+                color: p.textPrimary,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w600,
+              ),
+              cursorColor: p.primary,
               onTap: () {
                 setState(() {
                   _isFocused = true;
@@ -107,19 +103,20 @@ class _ModernSearchBarState extends State<ModernSearchBar>
               decoration: InputDecoration(
                 hintText: widget.hintText,
                 hintStyle: TextStyle(
-                  color: AppTheme.textTertiary,
-                  fontSize: 16,
+                  color: p.textTertiary,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w500,
                 ),
                 prefixIcon: widget.prefixIcon ??
                     Icon(
-                      Icons.search,
-                      color: _isFocused ? AppTheme.primaryColor : AppTheme.textTertiary,
+                      Icons.search_rounded,
+                      color: _isFocused ? p.primary : p.textTertiary,
                     ),
                 suffixIcon: _textController.text.isNotEmpty
                     ? IconButton(
                         icon: Icon(
-                          Icons.clear,
-                          color: AppTheme.textTertiary,
+                          Icons.cancel_rounded,
+                          color: p.textTertiary,
                         ),
                         onPressed: () {
                           _textController.clear();
@@ -129,22 +126,29 @@ class _ModernSearchBarState extends State<ModernSearchBar>
                       )
                     : widget.suffixIcon,
                 filled: true,
-                fillColor: AppTheme.surfaceColor,
+                fillColor: p.card,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide(
-                    color: Colors.grey[300]!,
+                    color: p.border,
+                    width: 1,
+                  ),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: p.border,
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide(
-                    color: AppTheme.primaryColor,
+                    color: p.primary,
                     width: 2,
                   ),
                 ),

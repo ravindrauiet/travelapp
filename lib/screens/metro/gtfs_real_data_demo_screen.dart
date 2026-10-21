@@ -3,6 +3,7 @@ import '../../services/gtfs_data_parser.dart';
 import '../../services/accurate_fare_calculator.dart';
 import '../../services/accurate_route_finder.dart';
 import '../../models/metro_station.dart';
+import '../../models/metro_line.dart' hide MetroStation;
 import '../../models/metro_route.dart';
 
 /// Demo screen showcasing real GTFS data from assets/gtfs_data/ folder

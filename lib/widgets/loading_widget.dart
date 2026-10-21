@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import 'ui_kit.dart';
 
 class LoadingWidget extends StatefulWidget {
   final String? message;
@@ -47,45 +48,68 @@ class _LoadingWidgetState extends State<LoadingWidget>
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final Gradient gradient = widget.color == null
+        ? AppTheme.heroGradient
+        : LinearGradient(
+            colors: [widget.color!.withValues(alpha: 0.45), widget.color!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: _animation.value * 2 * 3.14159,
-                child: Container(
-                  width: widget.size,
-                  height: widget.size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        (widget.color ?? AppTheme.primaryColor).withOpacity(0.3),
-                        widget.color ?? AppTheme.primaryColor,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.train,
-                    color: Colors.white,
-                    size: widget.size * 0.5,
+          SizedBox(
+            width: widget.size + 16,
+            height: widget.size + 16,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: widget.size + 16,
+                  height: widget.size + 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    strokeCap: StrokeCap.round,
+                    backgroundColor: p.tint(widget.color ?? p.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(widget.color ?? AppTheme.accentColor),
                   ),
                 ),
-              );
-            },
+                AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    final t = _animation.value;
+                    final scale = 0.92 + 0.08 * (1 - (2 * t - 1).abs());
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: Container(
+                    width: widget.size,
+                    height: widget.size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: gradient,
+                      boxShadow: AppTheme.glow(widget.color ?? AppTheme.brandViolet, alpha: 0.3),
+                    ),
+                    child: Icon(
+                      Icons.train_rounded,
+                      color: Colors.white,
+                      size: widget.size * 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           if (widget.message != null) ...[
             const SizedBox(height: 16),
             Text(
               widget.message!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+                    color: p.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -143,6 +167,10 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       return widget.child;
     }
 
+    final p = context.palette;
+    final base = p.isDark ? p.cardAlt : p.border;
+    final highlight = p.isDark ? p.border : p.cardAlt;
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -152,9 +180,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.grey[300]!,
-                Colors.grey[100]!,
-                Colors.grey[300]!,
+                base,
+                highlight,
+                base,
               ],
               stops: [
                 _animation.value - 0.3,

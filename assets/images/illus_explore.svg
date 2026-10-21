@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B45309"/>
+      <stop offset="1" stop-color="#78350F"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="104" rx="46" ry="4" fill="#1E1B4B" opacity="0.2"/>
+  <!-- India Gate -->
+  <path d="M28 102 V44 H92 V102 H76 V70 A16 16 0 0 0 44 70 V102 Z" fill="url(#stone)"/>
+  <path d="M44 102 V70 A16 16 0 0 1 76 70 V102 Z" fill="url(#shade)" opacity="0.35"/>
+  <rect x="22" y="36" width="76" height="10" rx="2" fill="url(#stone)"/>
+  <rect x="22" y="44" width="76" height="2.5" fill="#B45309" opacity="0.4"/>
+  <rect x="38" y="26" width="44" height="11" rx="2" fill="url(#stone)"/>
+  <rect x="48" y="16" width="24" height="11" rx="2" fill="url(#stone)"/>
+  <path d="M50 16 A10 8 0 0 1 70 16 Z" fill="#F59E0B"/>
+  <rect x="33" y="52" width="4" height="46" fill="#B45309" opacity="0.25"/>
+  <rect x="83" y="52" width="4" height="46" fill="#B45309" opacity="0.25"/>
+  <!-- Amar Jawan flame -->
+  <path d="M60 102 C55 96 56 90 60 84 C64 90 65 96 60 102 Z" fill="#F43F5E"/>
+  <path d="M60 102 C58 98 58 94 60 90 C62 94 62 98 60 102 Z" fill="#FDE68A"/>
+  <!-- Pin -->
+  <circle cx="98" cy="22" r="10" fill="#7C3AED"/>
+  <circle cx="98" cy="22" r="4" fill="#FFFFFF"/>
+  <path d="M90 26 L98 40 L106 26 Z" fill="#7C3AED"/>
+</svg>

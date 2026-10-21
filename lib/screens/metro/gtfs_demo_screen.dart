@@ -197,7 +197,7 @@ class _GTFSDemoScreenState extends State<GTFSDemoScreen> {
                 child: _buildStatCard(
                   'Data Source',
                   'GTFS',
-                  Icons.database,
+                  Icons.storage,
                   AppTheme.metroViolet,
                 ),
               ),
@@ -392,7 +392,7 @@ class _GTFSDemoScreenState extends State<GTFSDemoScreen> {
   void _testFareCalculation() async {
     try {
       final metroProvider = context.read<MetroProvider>();
-      final fare = metroProvider.calculateFare('Dwarka Sector 21', 'Rajiv Chowk');
+      final fare = await metroProvider.calculateFare('Dwarka Sector 21', 'Rajiv Chowk');
       
       showDialog(
         context: context,
@@ -404,7 +404,7 @@ class _GTFSDemoScreenState extends State<GTFSDemoScreen> {
             children: [
               const Text('From: Dwarka Sector 21'),
               const Text('To: Rajiv Chowk'),
-              Text('Fare: ₹${fare?.toStringAsFixed(0) ?? 'N/A'}'),
+              Text('Fare: ₹${fare?['fare'] ?? 'N/A'}'),
             ],
           ),
           actions: [

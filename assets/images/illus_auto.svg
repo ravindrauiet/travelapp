@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE047"/>
+      <stop offset="1" stop-color="#EAB308"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22C55E"/>
+      <stop offset="1" stop-color="#15803D"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="100" rx="46" ry="4" fill="#1E1B4B" opacity="0.2"/>
+  <!-- Canopy -->
+  <path d="M18 62 V44 Q18 26 38 26 H82 Q98 26 100 42 L102 62 Z" fill="url(#roof)"/>
+  <rect x="18" y="58" width="84" height="5" fill="#1E1B4B" opacity="0.15"/>
+  <!-- Window opening -->
+  <path d="M28 60 V46 Q28 36 40 36 H62 V60 Z" fill="#1E1B4B" opacity="0.85"/>
+  <path d="M68 60 V36 H84 Q92 36 93 46 L94 60 Z" fill="#1E1B4B" opacity="0.6"/>
+  <circle cx="50" cy="52" r="5" fill="#FDBA74"/>
+  <rect x="44" y="56" width="12" height="4" rx="2" fill="#6366F1"/>
+  <!-- Body -->
+  <path d="M14 62 H104 Q110 62 110 70 V82 Q110 88 104 88 H14 Q10 88 10 82 V70 Q10 62 14 62 Z" fill="url(#body)"/>
+  <rect x="10" y="72" width="100" height="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="104" cy="70" r="3.5" fill="#FDE68A"/>
+  <!-- Wheels -->
+  <circle cx="30" cy="90" r="12" fill="#1E1B4B"/>
+  <circle cx="30" cy="90" r="5" fill="#94A3B8"/>
+  <circle cx="92" cy="90" r="12" fill="#1E1B4B"/>
+  <circle cx="92" cy="90" r="5" fill="#94A3B8"/>
+</svg>

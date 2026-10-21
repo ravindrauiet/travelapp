@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../../models/tetris_game.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/game_bottom_navigation.dart';
+import '../../widgets/ui_kit.dart';
+import 'game_chrome.dart';
 
 class TetrisGameScreen extends StatefulWidget {
   const TetrisGameScreen({super.key});
@@ -128,58 +130,41 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tetris Game'),
-        backgroundColor: AppTheme.metroBlue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(_isGameRunning ? Icons.pause : Icons.play_arrow),
-            onPressed: _isGameRunning ? _pauseGame : _startGame,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _restartGame,
-          ),
-        ],
-      ),
-      body: Focus(
-        autofocus: true,
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent) {
-            _handleKeyPress(event.logicalKey);
-          }
-          return KeyEventResult.handled;
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.metroBlue.withOpacity(0.1),
-                AppTheme.metroMagenta.withOpacity(0.1),
-              ],
-            ),
-          ),
+    final p = context.palette;
+    final showStatus = _game.gameState == TetrisGameState.gameOver ||
+        _game.gameState == TetrisGameState.paused;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              _handleKeyPress(event.logicalKey);
+            }
+            return KeyEventResult.handled;
+          },
           child: Column(
             children: [
               // Score board at top
               _buildScoreBoard(),
               // Game board in center - takes most space
               Expanded(
-                child: _buildGameBoard(),
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _buildGameBoard()),
+                    if (showStatus) GameOverlay(child: _buildGameStatus()),
+                  ],
+                ),
               ),
               // Controls at bottom
               _buildControls(),
-              // Game status
-              _buildGameStatus(),
             ],
           ),
         ),
+        bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
       ),
-      bottomNavigationBar: const GameBottomNavigation(currentIndex: 4),
     );
   }
 
@@ -276,71 +261,26 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
   }
 
   Widget _buildScoreBoard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue[50]!, Colors.purple[50]!],
+    return GameHeader(
+      title: 'Block Drop',
+      gradient: AppTheme.transitGradient,
+      actions: [
+        HeaderIconButton(
+          icon: _isGameRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          tooltip: _isGameRunning ? 'Pause' : 'Play',
+          onTap: _isGameRunning ? _pauseGame : _startGame,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue[300]!, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildScoreCard('Score', _game.score.toString(), Colors.blue),
-          _buildScoreCard('Level', _game.level.toString(), Colors.purple),
-          _buildScoreCard('Lines', _game.linesCleared.toString(), Colors.green),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+        HeaderIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Restart',
+          onTap: _restartGame,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      ],
+      stats: [
+        GameStat('Score', _game.score.toString(), Icons.star_rounded),
+        GameStat('Level', _game.level.toString(), Icons.trending_up_rounded),
+        GameStat('Lines', _game.linesCleared.toString(), Icons.view_headline_rounded),
+      ],
     );
   }
 
@@ -369,27 +309,23 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
   }
 
   Widget _buildNextPiece() {
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: p.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: p.border),
+        boxShadow: p.shadow,
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Next Piece',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: p.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -436,34 +372,14 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         children: [
           // Touch instruction - compact
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue[100]!, Colors.purple[100]!],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue[300]!, width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.touch_app, color: Colors.blue[600], size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Swipe to control pieces',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue[700],
-                  ),
-                ),
-              ],
-            ),
+          const GameHintBar(
+            icon: Icons.swipe_rounded,
+            text: 'Swipe to move • swipe up to rotate',
+            color: AppTheme.metroBlue,
           ),
           const SizedBox(height: 12),
           // Action buttons
@@ -472,18 +388,18 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
               Expanded(
                 child: _buildActionButton(
                   _isGameRunning ? 'Pause' : 'Play',
-                  _isGameRunning ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  _isGameRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
                   _isGameRunning ? _pauseGame : _startGame,
-                  _isGameRunning ? Colors.orange : Colors.blue,
+                  _isGameRunning ? GamesPalette.amber : AppTheme.transitGradient,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
                   'Restart',
-                  Icons.refresh,
+                  Icons.refresh_rounded,
                   _restartGame,
-                  Colors.red,
+                  AppTheme.sunsetGradient,
                 ),
               ),
             ],
@@ -493,30 +409,12 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, Color color) {
-    return Container(
-      height: 40,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 6,
-          shadowColor: color.withOpacity(0.4),
-        ),
-      ),
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed, LinearGradient gradient) {
+    return GradientButton(
+      label: text,
+      icon: icon,
+      onPressed: onPressed,
+      gradient: gradient,
     );
   }
 
@@ -548,82 +446,24 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
   Widget _buildGameStatus() {
     if (_game.gameState == TetrisGameState.gameOver) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.metroRed.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.sentiment_very_dissatisfied,
-              size: 48,
-              color: AppTheme.metroRed,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Game Over!',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.metroRed,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Final Score: ${_game.score}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _restartGame,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.metroRed,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Play Again'),
-            ),
-          ],
-        ),
+      return GameStatusCard(
+        icon: Icons.sentiment_very_dissatisfied_rounded,
+        title: 'Game Over!',
+        lines: ['Final Score: ${_game.score}'],
+        color: AppTheme.errorColor,
+        actionLabel: 'Play Again',
+        actionIcon: Icons.replay_rounded,
+        onAction: _restartGame,
       );
     } else if (_game.gameState == TetrisGameState.paused) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.metroBlue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.pause_circle_outline,
-              size: 48,
-              color: AppTheme.metroBlue,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Game Paused',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.metroBlue,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _startGame,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.metroBlue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Resume'),
-            ),
-          ],
-        ),
+      return GameStatusCard(
+        icon: Icons.pause_rounded,
+        title: 'Game Paused',
+        color: AppTheme.metroBlue,
+        actionLabel: 'Resume',
+        actionIcon: Icons.play_arrow_rounded,
+        onAction: _startGame,
+        actionGradient: AppTheme.transitGradient,
       );
     }
 

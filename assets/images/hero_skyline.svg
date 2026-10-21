@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" width="420" height="200">
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD27A"/>
+      <stop offset="1" stop-color="#FF6B6B"/>
+    </linearGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A5B4FC" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#A5B4FC" stop-opacity="0.12"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C7D2FE" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#C7D2FE" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#312E81"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="train" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E0E7FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sun -->
+  <circle cx="318" cy="70" r="38" fill="url(#sun)" opacity="0.9"/>
+  <circle cx="318" cy="70" r="54" fill="#FFB86B" opacity="0.12"/>
+
+  <!-- Stars -->
+  <circle cx="40" cy="22" r="1.4" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="96" cy="40" r="1" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="150" cy="16" r="1.6" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="226" cy="34" r="1" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="392" cy="24" r="1.3" fill="#FFFFFF" opacity="0.7"/>
+
+  <!-- Far city -->
+  <path fill="url(#far)" d="M0 150 V118 H14 V104 H26 V118 H38 V96 H52 V120 H70 V108 H84 V122 H108 V100 H120 V90 H132 V122 H150 V112 H168 V124 H200 V106 H212 V98 H226 V124 H252 V110 H266 V120 H290 V102 H304 V118 H330 V94 H344 V112 H360 V104 H378 V120 H396 V108 H420 V150 Z"/>
+
+  <!-- Qutub Minar -->
+  <g fill="url(#mid)">
+    <polygon points="44,150 64,150 60,40 48,40"/>
+    <rect x="45" y="36" width="18" height="5" rx="1"/>
+    <rect x="50" y="26" width="8" height="10"/>
+    <polygon points="54,16 51,26 57,26"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.35">
+    <rect x="46" y="66" width="16" height="2.4"/>
+    <rect x="45" y="92" width="18" height="2.4"/>
+    <rect x="44.5" y="118" width="19" height="2.4"/>
+  </g>
+
+  <!-- Lotus Temple -->
+  <g fill="url(#mid)">
+    <path d="M236 150 C236 126 248 108 262 100 C276 108 288 126 288 150 Z"/>
+    <path d="M222 150 C224 132 232 120 244 114 C240 126 240 140 244 150 Z"/>
+    <path d="M302 150 C300 132 292 120 280 114 C284 126 284 140 280 150 Z"/>
+    <path d="M212 150 C216 140 222 134 230 130 C228 138 228 144 230 150 Z"/>
+    <path d="M312 150 C308 140 302 134 294 130 C296 138 296 144 294 150 Z"/>
+  </g>
+  <path d="M262 100 C256 116 256 134 262 150 C268 134 268 116 262 100 Z" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- India Gate (foreground) -->
+  <g fill="url(#near)">
+    <path d="M128 152 V82 H196 V152 H180 V112 A18 18 0 0 0 144 112 V152 Z"/>
+    <rect x="122" y="74" width="80" height="10" rx="2"/>
+    <rect x="140" y="64" width="44" height="11" rx="2"/>
+    <rect x="150" y="54" width="24" height="11" rx="2"/>
+    <path d="M152 54 A10 8 0 0 1 172 54 Z"/>
+  </g>
+  <path d="M162 152 C159 146 160 140 162 136 C164 140 165 146 162 152 Z" fill="#FFB547"/>
+  <rect x="134" y="90" width="4" height="56" fill="#FFFFFF" opacity="0.08"/>
+  <rect x="186" y="90" width="4" height="56" fill="#FFFFFF" opacity="0.08"/>
+
+  <!-- Red Fort style chhatris -->
+  <g fill="url(#near)">
+    <rect x="336" y="118" width="84" height="34"/>
+    <rect x="346" y="104" width="14" height="14"/>
+    <path d="M344 104 A9 9 0 0 1 362 104 Z"/>
+    <rect x="392" y="104" width="14" height="14"/>
+    <path d="M390 104 A9 9 0 0 1 408 104 Z"/>
+    <rect x="368" y="96" width="18" height="22"/>
+    <path d="M366 96 A11 11 0 0 1 388 96 Z"/>
+  </g>
+  <g fill="#FFB547" opacity="0.7">
+    <rect x="344" y="128" width="6" height="8" rx="3"/>
+    <rect x="358" y="128" width="6" height="8" rx="3"/>
+    <rect x="372" y="128" width="6" height="8" rx="3"/>
+    <rect x="386" y="128" width="6" height="8" rx="3"/>
+    <rect x="400" y="128" width="6" height="8" rx="3"/>
+  </g>
+
+  <!-- Trees -->
+  <g fill="#1E1B4B">
+    <ellipse cx="92" cy="146" rx="16" ry="10"/>
+    <ellipse cx="108" cy="148" rx="12" ry="8"/>
+    <ellipse cx="214" cy="148" rx="12" ry="8"/>
+    <ellipse cx="322" cy="148" rx="14" ry="8"/>
+  </g>
+
+  <!-- Elevated metro viaduct -->
+  <rect x="0" y="166" width="420" height="7" fill="#C7D2FE" opacity="0.9"/>
+  <g fill="#A5B4FC" opacity="0.65">
+    <rect x="30" y="173" width="10" height="27"/>
+    <rect x="130" y="173" width="10" height="27"/>
+    <rect x="230" y="173" width="10" height="27"/>
+    <rect x="330" y="173" width="10" height="27"/>
+  </g>
+  <rect x="0" y="152" width="420" height="14" fill="#1E1B4B"/>
+
+  <!-- Metro train -->
+  <g>
+    <path d="M196 148 H372 Q394 148 402 160 L404 164 H196 Z" fill="url(#train)"/>
+    <rect x="196" y="148" width="208" height="16" fill="none"/>
+    <rect x="196" y="157" width="206" height="3" fill="#FF6B35"/>
+    <g fill="#312E81">
+      <rect x="204" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="224" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="250" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="270" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="296" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="316" y="151" width="14" height="5" rx="1.5"/>
+      <rect x="342" y="151" width="14" height="5" rx="1.5"/>
+      <path d="M372 151 H386 L392 157 H372 Z"/>
+    </g>
+    <circle cx="398" cy="161" r="1.6" fill="#FDE68A"/>
+    <rect x="242" y="149" width="1.5" height="15" fill="#A5B4FC"/>
+    <rect x="288" y="149" width="1.5" height="15" fill="#A5B4FC"/>
+    <rect x="334" y="149" width="1.5" height="15" fill="#A5B4FC"/>
+  </g>
+  <!-- Speed lines -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <rect x="150" y="152" width="36" height="1.5" rx="0.75"/>
+    <rect x="164" y="158" width="26" height="1.5" rx="0.75"/>
+  </g>
+</svg>

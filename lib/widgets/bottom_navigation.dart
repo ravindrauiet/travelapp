@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'ui_kit.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -14,14 +15,14 @@ class AppBottomNavigation extends StatelessWidget {
       label: 'Home',
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
-      color: Color(0xFFFF4D2D), // Zomato / Swiggy energetic signature
+      color: Color(0xFF4F46E5),
       route: '/',
     ),
     _NavItem(
       label: 'Metro',
       icon: Icons.train_outlined,
       activeIcon: Icons.train_rounded,
-      color: Color(0xFF1D4ED8),
+      color: Color(0xFF2563EB),
       route: '/metro',
     ),
     _NavItem(
@@ -49,17 +50,20 @@ class AppBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final navBg = context.palette.surface;
+    final borderColor = context.palette.border;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-        ),
+      decoration: BoxDecoration(
+        color: navBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: isDark ? Border.all(color: borderColor) : null,
         boxShadow: [
           BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0x1A1E1B4B),
+            blurRadius: 24,
+            offset: const Offset(0, -6),
           ),
         ],
       ),
@@ -118,7 +122,7 @@ class _NavButton extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? item.color.withValues(alpha: 0.13)
+                    ? item.color.withValues(alpha: context.isDark ? 0.22 : 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -128,7 +132,7 @@ class _NavButton extends StatelessWidget {
                   child: Icon(
                     isSelected ? item.activeIcon : item.icon,
                     key: ValueKey(isSelected),
-                    color: isSelected ? item.color : const Color(0xFF9E9E9E),
+                    color: isSelected ? item.color : context.palette.textTertiary,
                     size: 22,
                   ),
                 ),
@@ -144,7 +148,7 @@ class _NavButton extends StatelessWidget {
                 fontSize: isSelected ? 11 : 10,
                 fontWeight:
                     isSelected ? FontWeight.w700 : FontWeight.w400,
-                color: isSelected ? item.color : const Color(0xFF9E9E9E),
+                color: isSelected ? item.color : context.palette.textTertiary,
                 letterSpacing: isSelected ? 0.2 : 0,
               ),
               child: Text(item.label),

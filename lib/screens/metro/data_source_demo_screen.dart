@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/metro_data_parser.dart';
 import '../../services/accurate_fare_calculator.dart';
+import '../../models/metro_station.dart';
+import '../../models/metro_line.dart' hide MetroStation;
 
 /// Demo screen showing that the app uses data from assets/data/ folder
 class DataSourceDemoScreen extends StatefulWidget {

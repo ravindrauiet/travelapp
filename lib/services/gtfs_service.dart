@@ -3,16 +3,13 @@ import 'dart:io';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:csv/csv.dart';
+import 'package:gtfs_realtime_bindings/gtfs_realtime_bindings.dart' as pbrt;
 import '../models/gtfs_models.dart';
+import '../utils/app_constants.dart';
 
 class GTFSService {
-  static const String _apiKey = '7brhWCYIy6TT0nCAXxWIvXoPCU56Lzox';
-  static const String _baseUrl = 'https://api.delhi.gov.in';
-  static const String _realtimeUrl = '$_baseUrl/api/realtime/VehiclePositions.pb';
-  
-  // Alternative endpoints for testing
-  static const String _localBaseUrl = 'http://localhost:55161';
-  static const String _localRealtimeUrl = '$_localBaseUrl/api/realtime/VehiclePositions.pb';
+  static const String _apiKey = AppConstants.otdApiKey;
+  static const String _otdRealtimeUrl = AppConstants.otdRealtimeUrl;
   
   // Cache for static data
   static List<GTFSAgency>? _agencies;
@@ -25,56 +22,34 @@ class GTFSService {
   static List<GTFSVehiclePosition>? _vehiclePositions;
   static DateTime? _lastRealTimeUpdate;
 
-  /// Fetch real-time vehicle positions
+  static DateTime? get lastRealTimeUpdate => _lastRealTimeUpdate;
+  static int get totalActiveBuses => _vehiclePositions?.length ?? 0;
+
+  /// Fetch real-time vehicle positions from Delhi Government OTD
   static Future<List<GTFSVehiclePosition>> getRealTimeVehiclePositions() async {
-    // Try local endpoint first, then fallback to production
-    final endpoints = [
-      '$_localRealtimeUrl?key=$_apiKey',
-      '$_realtimeUrl?key=$_apiKey',
-    ];
+    final endpoint = '$_otdRealtimeUrl?key=$_apiKey';
 
-    for (final endpoint in endpoints) {
-      try {
-        print('Trying endpoint: $endpoint');
-        final response = await http.get(
-          Uri.parse(endpoint),
-          headers: {
-            'Accept': 'application/x-protobuf, application/json',
-            'User-Agent': 'DelhiTravelGuide/1.0',
-          },
-        ).timeout(const Duration(seconds: 10));
+    try {
+      final response = await http.get(
+        Uri.parse(endpoint),
+        headers: {
+          'Accept': 'application/octet-stream, application/x-protobuf',
+          'User-Agent': 'Metromate/1.0',
+        },
+      ).timeout(const Duration(seconds: 15));
 
-        print('Response status: ${response.statusCode}');
-        print('Response headers: ${response.headers}');
-
-        if (response.statusCode == 200) {
-          // Try to parse as JSON first (in case it's not protobuf)
-          try {
-            final jsonData = json.decode(response.body);
-            final data = _parseJsonResponse(jsonData);
-            _vehiclePositions = data;
-            _lastRealTimeUpdate = DateTime.now();
-            print('Successfully parsed JSON response with ${data.length} vehicles');
-            return data;
-          } catch (jsonError) {
-            print('JSON parsing failed, trying protobuf: $jsonError');
-            // Parse protobuf response
-            final data = _parseProtobufResponse(response.bodyBytes);
-            _vehiclePositions = data;
-            _lastRealTimeUpdate = DateTime.now();
-            print('Successfully parsed protobuf response with ${data.length} vehicles');
-            return data;
-          }
-        } else {
-          print('HTTP error: ${response.statusCode} - ${response.body}');
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        final data = _parseProtobufResponse(response.bodyBytes);
+        if (data.isNotEmpty) {
+          _vehiclePositions = data;
+          _lastRealTimeUpdate = DateTime.now();
+          return data;
         }
-      } catch (e) {
-        print('Error with endpoint $endpoint: $e');
-        continue;
       }
+    } catch (e) {
+      print('GTFSService: Live OTD fetch error: $e');
     }
 
-    print('All endpoints failed, returning cached data or empty list');
     return _vehiclePositions ?? [];
   }
 
@@ -117,49 +92,28 @@ class GTFSService {
     return vehicles.where((vehicle) => relevantTrips.contains(vehicle.tripId)).toList();
   }
 
-  /// Get static GTFS data from API
+  /// Get static GTFS agencies (DTC & DIMTS)
   static Future<List<GTFSAgency>> getAgencies() async {
     if (_agencies != null) return _agencies!;
     
-    try {
-      // Try to fetch from API first
-      final response = await http.get(
-        Uri.parse('$_localBaseUrl/gtfs/agency.txt'),
-        headers: {
-          'Accept': 'text/csv, text/plain',
-          'User-Agent': 'DelhiTravelGuide/1.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final csvData = const CsvToListConverter().convert(response.body);
-        if (csvData.isNotEmpty) {
-          final headers = csvData[0].map((e) => e.toString()).toList();
-          _agencies = csvData.skip(1).map((row) {
-            final rowMap = <String, String>{};
-            for (int i = 0; i < headers.length && i < row.length; i++) {
-              rowMap[headers[i]] = row[i].toString();
-            }
-            return GTFSAgency.fromCsv(rowMap);
-          }).toList();
-          print('Successfully loaded ${_agencies!.length} agencies from API');
-          return _agencies!;
-        }
-      }
-    } catch (e) {
-      print('Error fetching agencies from API: $e');
-    }
-    
-    // Fallback to simulated data
     _agencies = [
       GTFSAgency(
         agencyId: 'DTC',
         agencyName: 'Delhi Transport Corporation',
-        agencyUrl: 'https://dtc.nic.in',
+        agencyUrl: 'https://dtc.delhi.gov.in',
         agencyTimezone: 'Asia/Kolkata',
         agencyLang: 'en',
-        agencyPhone: '+91-11-2389-0000',
+        agencyPhone: '1800118181',
         agencyEmail: 'info@dtc.nic.in',
+      ),
+      GTFSAgency(
+        agencyId: 'DIMTS',
+        agencyName: 'Delhi Integrated Multi-Modal Transit System Ltd.',
+        agencyUrl: 'https://www.dimts.in',
+        agencyTimezone: 'Asia/Kolkata',
+        agencyLang: 'en',
+        agencyPhone: '011-43090100',
+        agencyEmail: 'info@dimts.in',
       ),
     ];
     
@@ -169,75 +123,77 @@ class GTFSService {
   static Future<List<GTFSStop>> getStops() async {
     if (_stops != null) return _stops!;
     
-    try {
-      // Try to fetch from API first
-      final response = await http.get(
-        Uri.parse('$_localBaseUrl/gtfs/stops.txt'),
-        headers: {
-          'Accept': 'text/csv, text/plain',
-          'User-Agent': 'DelhiTravelGuide/1.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final csvData = const CsvToListConverter().convert(response.body);
-        if (csvData.isNotEmpty) {
-          final headers = csvData[0].map((e) => e.toString()).toList();
-          _stops = csvData.skip(1).map((row) {
-            final rowMap = <String, String>{};
-            for (int i = 0; i < headers.length && i < row.length; i++) {
-              rowMap[headers[i]] = row[i].toString();
-            }
-            return GTFSStop.fromCsv(rowMap);
-          }).toList();
-          print('Successfully loaded ${_stops!.length} stops from API');
-          return _stops!;
-        }
-      }
-    } catch (e) {
-      print('Error fetching stops from API: $e');
-    }
-    
-    // Fallback to simulated data
     _stops = [
       GTFSStop(
-        stopId: 'stop_001',
-        stopCode: '001',
+        stopId: 'stop_kg',
+        stopCode: 'ISBT-KG',
+        stopName: 'ISBT Kashmere Gate',
+        stopLat: 28.6674,
+        stopLon: 77.2285,
+        wheelchairBoarding: 1,
+      ),
+      GTFSStop(
+        stopId: 'stop_cp',
+        stopCode: 'CP-CENTRAL',
         stopName: 'Connaught Place',
         stopLat: 28.6315,
         stopLon: 77.2167,
         wheelchairBoarding: 1,
       ),
       GTFSStop(
-        stopId: 'stop_002',
-        stopCode: '002',
+        stopId: 'stop_ig',
+        stopCode: 'IG-HEXAGON',
         stopName: 'India Gate',
         stopLat: 28.6129,
         stopLon: 77.2295,
         wheelchairBoarding: 1,
       ),
       GTFSStop(
-        stopId: 'stop_003',
-        stopCode: '003',
-        stopName: 'Red Fort',
+        stopId: 'stop_rf',
+        stopCode: 'RED-FORT',
+        stopName: 'Red Fort (Lal Qila)',
         stopLat: 28.6562,
         stopLon: 77.2410,
-        wheelchairBoarding: 0,
-      ),
-      GTFSStop(
-        stopId: 'stop_004',
-        stopCode: '004',
-        stopName: 'Rajiv Chowk',
-        stopLat: 28.6315,
-        stopLon: 77.2167,
         wheelchairBoarding: 1,
       ),
       GTFSStop(
-        stopId: 'stop_005',
-        stopCode: '005',
-        stopName: 'Dwarka Sector 21',
-        stopLat: 28.5921,
-        stopLon: 77.0465,
+        stopId: 'stop_aiims',
+        stopCode: 'AIIMS-RING',
+        stopName: 'AIIMS / Safdarjung Hospital',
+        stopLat: 28.5672,
+        stopLon: 77.2100,
+        wheelchairBoarding: 1,
+      ),
+      GTFSStop(
+        stopId: 'stop_ln',
+        stopCode: 'LAJPAT-NAGAR',
+        stopName: 'Lajpat Nagar',
+        stopLat: 28.5675,
+        stopLon: 77.2431,
+        wheelchairBoarding: 1,
+      ),
+      GTFSStop(
+        stopId: 'stop_np',
+        stopCode: 'NEHRU-PLACE',
+        stopName: 'Nehru Place Terminal',
+        stopLat: 28.5492,
+        stopLon: 77.2530,
+        wheelchairBoarding: 1,
+      ),
+      GTFSStop(
+        stopId: 'stop_kb',
+        stopCode: 'KAROL-BAGH',
+        stopName: 'Karol Bagh',
+        stopLat: 28.6515,
+        stopLon: 77.1908,
+        wheelchairBoarding: 1,
+      ),
+      GTFSStop(
+        stopId: 'stop_dk',
+        stopCode: 'DHAULA-KUAN',
+        stopName: 'Dhaula Kuan',
+        stopLat: 28.5920,
+        stopLon: 77.1610,
         wheelchairBoarding: 1,
       ),
     ];
@@ -248,66 +204,72 @@ class GTFSService {
   static Future<List<GTFSRoute>> getRoutes() async {
     if (_routes != null) return _routes!;
     
-    try {
-      // Try to fetch from API first
-      final response = await http.get(
-        Uri.parse('$_localBaseUrl/gtfs/routes.txt'),
-        headers: {
-          'Accept': 'text/csv, text/plain',
-          'User-Agent': 'DelhiTravelGuide/1.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final csvData = const CsvToListConverter().convert(response.body);
-        if (csvData.isNotEmpty) {
-          final headers = csvData[0].map((e) => e.toString()).toList();
-          _routes = csvData.skip(1).map((row) {
-            final rowMap = <String, String>{};
-            for (int i = 0; i < headers.length && i < row.length; i++) {
-              rowMap[headers[i]] = row[i].toString();
-            }
-            return GTFSRoute.fromCsv(rowMap);
-          }).toList();
-          print('Successfully loaded ${_routes!.length} routes from API');
-          return _routes!;
-        }
-      }
-    } catch (e) {
-      print('Error fetching routes from API: $e');
-    }
-    
-    // Fallback to simulated data
     _routes = [
       GTFSRoute(
-        routeId: 'route_001',
+        routeId: 'dtc_505',
         agencyId: 'DTC',
-        routeShortName: '1',
-        routeLongName: 'Red Fort - Connaught Place',
-        routeType: 3, // Bus
-        routeColor: 'FF0000',
+        routeShortName: '505',
+        routeLongName: 'Mehrauli ↔ New Delhi Railway Station',
+        routeType: 3,
+        routeColor: '16A34A',
         routeTextColor: 'FFFFFF',
       ),
       GTFSRoute(
-        routeId: 'route_002',
+        routeId: 'dtc_522',
         agencyId: 'DTC',
-        routeShortName: '2',
-        routeLongName: 'India Gate - CP',
-        routeType: 3, // Bus
-        routeColor: '00FF00',
-        routeTextColor: '000000',
+        routeShortName: '522',
+        routeLongName: 'Inderpuri ↔ Lado Sarai Firni',
+        routeType: 3,
+        routeColor: '2563EB',
+        routeTextColor: 'FFFFFF',
       ),
       GTFSRoute(
-        routeId: 'route_003',
+        routeId: 'dtc_185',
         agencyId: 'DTC',
-        routeShortName: '3',
-        routeLongName: 'Dwarka - CP',
-        routeType: 3, // Bus
-        routeColor: '0000FF',
+        routeShortName: '185',
+        routeLongName: 'Nathupura ↔ Kendriya Terminal',
+        routeType: 3,
+        routeColor: 'DC2626',
+        routeTextColor: 'FFFFFF',
+      ),
+      GTFSRoute(
+        routeId: 'dtc_534',
+        agencyId: 'DTC',
+        routeShortName: '534',
+        routeLongName: 'Mehrauli ↔ Anand Vihar ISBT',
+        routeType: 3,
+        routeColor: '7C3AED',
+        routeTextColor: 'FFFFFF',
+      ),
+      GTFSRoute(
+        routeId: 'dtc_544',
+        agencyId: 'DTC',
+        routeShortName: '544',
+        routeLongName: 'Badarpur Border ↔ R.K. Puram',
+        routeType: 3,
+        routeColor: 'EA580C',
+        routeTextColor: 'FFFFFF',
+      ),
+      GTFSRoute(
+        routeId: 'dtc_729',
+        agencyId: 'DTC',
+        routeShortName: '729',
+        routeLongName: 'Kapashera Border ↔ Mori Gate Terminal',
+        routeType: 3,
+        routeColor: '0284C7',
+        routeTextColor: 'FFFFFF',
+      ),
+      GTFSRoute(
+        routeId: 'dtc_tms',
+        agencyId: 'DTC',
+        routeShortName: 'TMS',
+        routeLongName: 'Teevra Mudrika Seva (Ring Road Express)',
+        routeType: 3,
+        routeColor: '10B981',
         routeTextColor: 'FFFFFF',
       ),
     ];
-    
+
     return _routes!;
   }
 
@@ -398,39 +360,63 @@ class GTFSService {
     return vehicles;
   }
 
-  /// Parse protobuf response (simplified implementation)
+  /// Parse protobuf response from Delhi Government OTD
   static List<GTFSVehiclePosition> _parseProtobufResponse(List<int> bytes) {
-    // This is a simplified implementation
-    // In a real app, you'd use the protobuf library to parse the actual protobuf format
-    
-    // For demo purposes, return some simulated real-time data
-    final now = DateTime.now();
-    return [
-      GTFSVehiclePosition(
-        vehicleId: 'bus_001',
-        tripId: 'trip_001_1',
-        routeId: 'route_001',
-        directionId: 0,
-        latitude: 28.6315 + (0.001 * (now.second % 10)),
-        longitude: 77.2167 + (0.001 * (now.second % 10)),
-        bearing: 45.0,
-        speed: 25.0,
-        currentStatus: 'IN_TRANSIT', // In transit
-        timestamp: now.millisecondsSinceEpoch,
-      ),
-      GTFSVehiclePosition(
-        vehicleId: 'bus_002',
-        tripId: 'trip_002_1',
-        routeId: 'route_002',
-        directionId: 0,
-        latitude: 28.6129 + (0.001 * (now.second % 10)),
-        longitude: 77.2295 + (0.001 * (now.second % 10)),
-        bearing: 90.0,
-        speed: 30.0,
-        currentStatus: 'IN_TRANSIT', // In transit
-        timestamp: now.millisecondsSinceEpoch,
-      ),
-    ];
+    try {
+      final feed = pbrt.FeedMessage.fromBuffer(bytes);
+      final List<GTFSVehiclePosition> list = [];
+
+      for (final entity in feed.entity) {
+        if (!entity.hasVehicle()) continue;
+        final v = entity.vehicle;
+        final pos = v.hasPosition() ? v.position : null;
+        if (pos == null) continue;
+
+        String status = 'IN_TRANSIT';
+        if (v.hasCurrentStatus()) {
+          switch (v.currentStatus) {
+            case pbrt.VehiclePosition_VehicleStopStatus.INCOMING_AT:
+              status = 'INCOMING';
+              break;
+            case pbrt.VehiclePosition_VehicleStopStatus.STOPPED_AT:
+              status = 'STOPPED';
+              break;
+            case pbrt.VehiclePosition_VehicleStopStatus.IN_TRANSIT_TO:
+              status = 'IN_TRANSIT';
+              break;
+            default:
+              status = 'IN_TRANSIT';
+          }
+        }
+
+        final vehicleId = v.hasVehicle() && v.vehicle.hasId() ? v.vehicle.id : entity.id;
+        final routeId = v.hasTrip() && v.trip.hasRouteId() ? v.trip.routeId : '';
+        final tripId = v.hasTrip() && v.trip.hasTripId() ? v.trip.tripId : '';
+        final directionId = v.hasTrip() && v.trip.hasDirectionId() ? v.trip.directionId : 0;
+        final speedKmh = pos.hasSpeed() ? (pos.speed.toDouble() * 3.6) : 0.0;
+
+        list.add(GTFSVehiclePosition(
+          vehicleId: vehicleId,
+          tripId: tripId,
+          routeId: routeId,
+          directionId: directionId,
+          latitude: pos.latitude.toDouble(),
+          longitude: pos.longitude.toDouble(),
+          bearing: pos.hasBearing() ? pos.bearing.toDouble() : 0.0,
+          speed: speedKmh,
+          currentStatus: status,
+          timestamp: v.hasTimestamp()
+              ? (v.timestamp.toInt() * 1000)
+              : DateTime.now().millisecondsSinceEpoch,
+        ));
+      }
+
+      print('GTFSService: Successfully parsed ${list.length} live vehicles from Delhi OTD');
+      return list;
+    } catch (e) {
+      print('GTFSService: Protobuf decoding error: $e');
+      return [];
+    }
   }
 
   /// Calculate distance between two coordinates
