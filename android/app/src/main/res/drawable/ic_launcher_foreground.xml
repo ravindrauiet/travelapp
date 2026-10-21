@@ -1,29 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Metromate mark: saffron location pin with a metro-route "M".
+     Drawn in a 512 grid and scaled into the 66dp adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- MetroMate Icon: "M" with metro train symbol -->
-    <!-- Letter M -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,25 L30,70 L42,70 L54,50 L66,70 L78,70 L78,25 L66,25 L66,55 L54,38 L42,55 L42,25 Z" />
-    <!-- Metro train symbol (horizontal lines representing tracks) -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:strokeWidth="3"
-        android:strokeColor="#FFFFFF"
-        android:pathData="M20,75 L88,75" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeColor="#FFFFFF"
-        android:pathData="M25,80 L83,80" />
+    <group
+        android:scaleX="0.163"
+        android:scaleY="0.163"
+        android:translateX="12.27"
+        android:translateY="12.92">
+        <!-- Ground shadow -->
+        <path
+            android:fillColor="#0B0D1F"
+            android:fillAlpha="0.35"
+            android:pathData="M192,430a64,12 0,1 0,128 0a64,12 0,1 0,-128 0z" />
+        <!-- Pin -->
+        <path android:pathData="M256,432C188,352 112,292 112,206A144,144 0,0 1,400 206C400,292 324,352 256,432Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="112" android:startY="62"
+                    android:endX="400" android:endY="432">
+                    <item android:offset="0" android:color="#FFFFC24D" />
+                    <item android:offset="0.5" android:color="#FFFF7A3D" />
+                    <item android:offset="1" android:color="#FFF43F5E" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- Gloss -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.18"
+            android:pathData="M256,62A144,144 0,0 0,112 206C112,230 118,252 128,272A150,150 0,0 1,256 98A150,150 0,0 1,384 160A144,144 0,0 0,256 62Z" />
+        <!-- Route "M" -->
+        <path
+            android:pathData="M192,258V166L256,226L320,166V258"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="34"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- Interchange dot -->
+        <path
+            android:fillColor="#1E1B4B"
+            android:pathData="M245,226a11,11 0,1 0,22 0a11,11 0,1 0,-22 0z" />
+    </group>
 </vector>
-
-
-
-
-
-

@@ -26,7 +26,7 @@ class NotificationService {
     if (_initialized) return;
 
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
@@ -207,7 +207,7 @@ class NotificationService {
         color: Color(color),
         ongoing: ongoing,
         autoCancel: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,

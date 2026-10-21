@@ -42,7 +42,12 @@ import 'widgets/app_scaffold.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.init();
+  // Notifications are optional; never let their setup stop the app from opening.
+  try {
+    await NotificationService.init().timeout(const Duration(seconds: 5));
+  } catch (e) {
+    debugPrint('Notification setup failed: $e');
+  }
   runApp(const MetromateApp());
 }
 

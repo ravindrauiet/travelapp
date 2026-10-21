@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-colour mark for Android 13+ themed icons -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.163"
+        android:scaleY="0.163"
+        android:translateX="12.27"
+        android:translateY="12.92">
+        <!-- Pin outline -->
+        <path
+            android:pathData="M256,420C192,346 124,290 124,208A132,132 0,0 1,388 208C388,290 320,346 256,420Z"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="30"
+            android:strokeLineJoin="round" />
+        <!-- Route "M" -->
+        <path
+            android:pathData="M192,258V166L256,226L320,166V258"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="34"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

@@ -60,7 +60,7 @@ class AppConstants {
   // ── Compliance & Policies ───────────────────────────────────────────────────
   static const String privacyPolicyUrl =
       'https://metromate-delhi.web.app/privacy-policy';
-  static const String appVersion = '1.0.2';
+  static const String appVersion = '1.0.3';
 
   // ── India CPCB Air Quality Index (AQI) Standard ────────────────────────────
   static String getAqiCategory(int aqi) {

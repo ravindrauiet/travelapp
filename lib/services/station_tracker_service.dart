@@ -238,6 +238,7 @@ class StationTrackerService extends ChangeNotifier {
           notificationTitle: 'Metromate is tracking your metro trip',
           notificationText: 'Station alerts are on. Open the app and tap Stop to end.',
           notificationChannelName: 'Station tracking',
+          notificationIcon: AndroidResource(name: 'ic_notification', defType: 'drawable'),
           enableWakeLock: true,
         ),
       );
